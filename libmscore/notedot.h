@@ -24,7 +24,7 @@ class Rest;
 //   @@ NoteDot
 //---------------------------------------------------------
 
-class NoteDot final : public Element {
+class NoteDot : public Element {
 
    public:
       NoteDot(Score* = 0);

@@ -82,6 +82,10 @@ void MuseScore::updateInputState(Score* score)
                   case StaffGroup::PERCUSSION:
                         changeState(STATE_NOTE_ENTRY_STAFF_DRUM);
                         break;
+                  case StaffGroup::JIANPU:
+                        //TODO: TBD
+                        changeState(STATE_NOTE_ENTRY_STAFF_PITCHED);
+                        break;
                   }
             }
 

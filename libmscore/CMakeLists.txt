@@ -85,6 +85,8 @@ add_library (
       lyricsline.cpp
       layoutlinear.cpp
       connector.cpp location.cpp
+      standardfactory.cpp jianpufactory.cpp jianpuchord.cpp jianpunote.cpp jianpurest.cpp 
+      jianpuhook.cpp jianpubeam.cpp jianpunotedot.cpp
       )
 
 ##

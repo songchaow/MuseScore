@@ -12,6 +12,7 @@
 
 #include "chord.h"
 #include "note.h"
+#include "jianpunote.h"
 #include "xml.h"
 #include "style.h"
 #include "segment.h"
@@ -47,6 +48,8 @@
 #include "stringdata.h"
 #include "beam.h"
 #include "slur.h"
+#include "stafffactory.h"
+
 
 namespace Ms {
 
@@ -217,7 +220,7 @@ Chord::Chord(Score* s)
       _graceIndex   = 0;
       }
 
-Chord::Chord(const Chord& c, bool link)
+Chord::Chord(const Chord& c, bool link, StaffFactory* fac)
    : ChordRest(c, link)
       {
       if (link)
@@ -246,7 +249,6 @@ Chord::Chord(const Chord& c, bool link)
       _arpeggio      = 0;
       _stemSlash     = 0;
       _tremolo       = 0;
-
       _graceIndex     = c._graceIndex;
       _noStem         = c._noStem;
       _playEventType  = c._playEventType;
@@ -254,10 +256,31 @@ Chord::Chord(const Chord& c, bool link)
       _noteType       = c._noteType;
       _crossMeasure   = CrossMeasure::UNKNOWN;
 
+      for (Note* onote : c._notes) {
+            Note* nnote;
+            if (fac)
+                  nnote = fac->cloneNote(onote, link);
+            else
+                  nnote = new Note(*onote, link);
+            add(nnote);
+            }
+      for (Chord* gn : c.graceNotes()) {
+            Chord* nc;
+            if (fac)
+                  nc = fac->cloneChord(gn, link);
+            else
+                  nc = new Chord(*gn, link);
+            add(nc);
+            }
+      if (c._hook) {
+            if (fac)
+                  add(fac->cloneHook(c._hook));
+            else
+                  add(new Hook(*(c._hook)));
+            }
+
       if (c._stem)
             add(new Stem(*(c._stem)));
-      if (c._hook)
-            add(new Hook(*(c._hook)));
       if (c._stemSlash)
             add(new StemSlash(*(c._stemSlash)));
       if (c._arpeggio) {
@@ -986,7 +1009,11 @@ bool Chord::readProperties(XmlReader& e)
       const QStringRef& tag(e.name());
 
       if (tag == "Note") {
-            Note* note = new Note(score());
+            Note* note;
+            if (staff()->isJianpuStaff(tick()))
+                  note = new JianpuNote(score());
+            else
+                  note = new Note(score());
             // the note needs to know the properties of the track it belongs to
             note->setTrack(track());
             note->setChord(this);
@@ -1364,6 +1391,9 @@ void Chord::layoutStem1()
 
 void Chord::layoutStem()
       {
+      if (staff() && staff()->isJianpuStaff(tick()))
+            return;
+
       for (Chord* c : _graceNotes)
             c->layoutStem();
       if (_beam)
