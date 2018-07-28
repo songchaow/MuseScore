@@ -227,14 +227,6 @@ Chord::Chord(const Chord& c, bool link, StaffFactory* fac)
             score()->undo(new Link(this, const_cast<Chord*>(&c)));
       _ledgerLines = 0;
 
-      for (Note* onote : c._notes) {
-            Note* nnote = new Note(*onote, link);
-            add(nnote);
-            }
-      for (Chord* gn : c.graceNotes()) {
-            Chord* nc = new Chord(*gn, link);
-            add(nc);
-            }
       for (Articulation* a : c._articulations) {    // make deep copy
             Articulation* na = new Articulation(*a);
             if (link)
