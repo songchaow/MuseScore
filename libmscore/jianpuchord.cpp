@@ -427,7 +427,6 @@ void JianpuChord::layout()
             lll        += _arpeggio->width() + arpeggioDistance + chordX;
             qreal y1   = upnote->pos().y() - upnote->headHeight() * .5;
             _arpeggio->setPos(-lll, y1);
-            _arpeggio->adjustReadPos();
             }
 
       // allocate enough room for glissandi

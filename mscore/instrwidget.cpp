@@ -135,7 +135,7 @@ void StaffListItem::initStaffTypeCombo(bool forceRecreate)
       for (const StaffType& st : StaffType::presets()) {
             if ( (st.group() == StaffGroup::STANDARD && (!canUsePerc))    // percussion excludes standard
                         || (st.group() == StaffGroup::PERCUSSION && canUsePerc)
-                        || (st.group() == StaffGroup::TAB && canUseTabs && st.lines() <= numFrettedStrings))
+                        || (st.group() == StaffGroup::TAB && canUseTabs && st.lines() <= numFrettedStrings)
                         || (st.group() == StaffGroup::JIANPU && canUseJianpu)) {
                   _staffTypeCombo->addItem(st.name(), idx);
                   }

@@ -319,7 +319,7 @@ bool JianpuNote::readProperties(XmlReader& xml)
                   if (id != -1 &&
                               // DISABLE if pasting into a staff with linked staves
                               // because the glissando is not properly cloned into the linked staves
-                              (!xml.pasteMode() || !staff()->linkedStaves() || staff()->linkedStaves()->empty())) {
+                              (!xml.pasteMode() || !staff()->links() || staff()->links()->empty())) {
                         Spanner* placeholder = new TextLine(score());
                         placeholder->setAnchor(Spanner::Anchor::NOTE);
                         placeholder->setEndElement(this);
@@ -337,14 +337,14 @@ bool JianpuNote::readProperties(XmlReader& xml)
             // check this is not a lower-to-higher cross-staff spanner we already got
             int id = xml.intAttribute("id");
             Spanner* placeholder = xml.findSpanner(id);
-            if (placeholder) {
+            if (placeholder && placeholder->endElement()) {
                   // if it is, fill end data from place-holder
                   sp->setAnchor(Spanner::Anchor::NOTE);           // make sure we can set a Note as end element
                   sp->setEndElement(placeholder->endElement());
                   sp->setTrack2(placeholder->track2());
                   sp->setTick(xml.tick());                          // make sure tick2 will be correct
                   sp->setTick2(placeholder->tick2());
-                  static_cast<Note*>(placeholder->endElement())->addSpannerBack(sp);
+                  toNote(placeholder->endElement())->addSpannerBack(sp);
                   // remove no longer needed place-holder before reading the new spanner,
                   // as reading it also adds it to XML reader list of spanners,
                   // which would overwrite the place-holder
@@ -355,7 +355,7 @@ bool JianpuNote::readProperties(XmlReader& xml)
             sp->read(xml);
             // DISABLE pasting of glissandi into staves with other lionked staves
             // because the glissando is not properly cloned into the linked staves
-            if (xml.pasteMode() && staff()->linkedStaves() && !staff()->linkedStaves()->empty()) {
+            if (xml.pasteMode() && staff() && staff()->links() && !staff()->links()->empty()) {
                   xml.removeSpanner(sp);    // read() added the element to the XMLReader: remove it
                   delete sp;
                   }
@@ -533,7 +533,6 @@ void JianpuNote::layout2()
             qreal xx = x + d;
             for (NoteDot* dot : _dots) {
                   dot->rxpos() = xx;
-                  dot->adjustReadPos();
                   xx += dd;
                   }
             }
@@ -546,7 +545,7 @@ void JianpuNote::layout2()
             if (e->isSymbol()) {
                   qreal w = headWidth();
                   Symbol* sym = toSymbol(e);
-                  QPointF rp = e->readPos();
+                  // QPointF rp = e->readPos();
                   e->layout();
                   if (sym->sym() == SymId::noteheadParenthesisRight) {
                         e->rxpos() += w;
@@ -554,14 +553,14 @@ void JianpuNote::layout2()
                   else if (sym->sym() == SymId::noteheadParenthesisLeft) {
                         e->rxpos() -= symWidth(SymId::noteheadParenthesisLeft);
                         }
-                  if (sym->sym() == SymId::noteheadParenthesisLeft || sym->sym() == SymId::noteheadParenthesisRight) {
+/*                   if (sym->sym() == SymId::noteheadParenthesisLeft || sym->sym() == SymId::noteheadParenthesisRight) {
                         // adjustReadPos() was called too early in layout(), adjust:
                         if (!rp.isNull()) {
                               e->setUserOff(QPointF());
                               e->setReadPos(rp);
                               e->adjustReadPos();
                               }
-                        }
+                        } */
                   }
             else
                   e->layout();
