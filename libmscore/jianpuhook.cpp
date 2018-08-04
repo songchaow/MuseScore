@@ -57,12 +57,15 @@ void JianpuHook::layout()
                   // Add octave-dot box y-offset to align with beams of other notes.
                   y += JianpuNote::OCTAVE_DOTBOX_Y_OFFSET + JianpuNote::OCTAVE_DOTBOX_HEIGHT;
                   }
+            // Clean beams generated in the last call to avoid redrawing.
+            _durationBeams.clear();
             for (int i = 0; i < beamCount; i++) {
                   _durationBeams.push_back(new QLineF(x1, y, x2, y));
                   addbbox(QRectF(x1, y, x2 - x1, beamDistance));
                   y += beamDistance;
                   }
             }
+      qDebug("count of durationbeams: %d ",_durationBeams.size());
       //qDebug("bbox x=%.0f y=%.0f w=%.0f h=%.0f", bbox().x(), bbox().y(), bbox().width(), bbox().height());
       //Q_ASSERT(bbox().x() < 20000 && bbox().y() < 20000);
       //Q_ASSERT(bbox().width() < 20000 && bbox().height() < 20000);
