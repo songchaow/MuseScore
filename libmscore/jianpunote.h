@@ -65,6 +65,9 @@ class JianpuNote : public Note {
       static const int OCTAVE_DOTBOX_WIDTH = MAX_OCTAVE_COLS * OCTAVE_DOT_COL_WIDTH; // For 2x2 dots
       static const int OCTAVE_DOTBOX_HEIGHT = MAX_OCTAVE_ROWS * OCTAVE_DOT_ROW_HEIGHT; // For 2x2 dots
       static const int OCTAVE_DOTBOX_Y_OFFSET = 10;  // Y-offset between octave dot and note number boxes
+      // real arguments after applied magnitude
+      qreal OCTAVE_DOT_WIDTH_MAG, OCTAVE_DOT_HEIGHT_MAG, OCTAVE_DOT_X_SPACE_MAG, OCTAVE_DOT_Y_SPACE_MAG,
+            OCTAVE_DOT_COL_WIDTH_MAG, OCTAVE_DOT_ROW_HEIGHT_MAG, OCTAVE_DOTBOX_WIDTH_MAG, OCTAVE_DOTBOX_HEIGHT_MAG, OCTAVE_DOTBOX_Y_OFFSET_MAG;
       static const int DURATION_DASH_X_SPACE = 30;   // Horizontal Space between duration dashes
       static const int DURATION_DASH_WIDTH = 30;
       static const int DURATION_DASH_HEIGHT = 8;

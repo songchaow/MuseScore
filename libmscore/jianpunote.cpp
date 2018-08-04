@@ -481,6 +481,17 @@ void JianpuNote::layout()
       QFontMetricsF fm(st->jianpuNoteFont(), MScore::paintDevice());
       QString txt = QString::number(_noteNumber);
       QRectF rect = fm.tightBoundingRect(txt);
+      // apply magnitude
+      rect.setRect(0, 0, rect.width() * mag(), rect.height() * mag());
+      OCTAVE_DOTBOX_HEIGHT_MAG = OCTAVE_DOTBOX_HEIGHT * mag();
+      OCTAVE_DOTBOX_WIDTH_MAG = OCTAVE_DOTBOX_WIDTH * mag();
+      OCTAVE_DOTBOX_Y_OFFSET_MAG = OCTAVE_DOTBOX_Y_OFFSET * mag();
+      OCTAVE_DOT_COL_WIDTH_MAG = OCTAVE_DOT_COL_WIDTH * mag();
+      OCTAVE_DOT_ROW_HEIGHT_MAG = OCTAVE_DOT_COL_WIDTH * mag();
+      OCTAVE_DOT_WIDTH_MAG = OCTAVE_DOT_WIDTH * mag();
+      OCTAVE_DOT_HEIGHT_MAG = OCTAVE_DOT_HEIGHT * mag();
+      OCTAVE_DOT_X_SPACE_MAG = OCTAVE_DOT_X_SPACE * mag();
+      OCTAVE_DOT_Y_SPACE_MAG = OCTAVE_DOT_Y_SPACE * mag();
       // Font bounding rectangle height is too large; make it smaller.
       //_noteNumberBox.setRect(0, 0, rect.width() * FONT_BBOX_WIDTH_RATIO, rect.height() * FONT_BBOX_HEIGHT_RATIO);
       _noteNumberBox.setRect(0, 0, rect.width(), rect.height() * FONT_BBOX_HEIGHT_RATIO);
@@ -488,13 +499,13 @@ void JianpuNote::layout()
       // Lay out octave-dot box.
       if (_noteOctave < 0) {
             // Lower octave.
-            _octaveDotBox.setRect(0, _noteNumberBox.y() + _noteNumberBox.height() + OCTAVE_DOTBOX_Y_OFFSET,
-                                  _noteNumberBox.width(), OCTAVE_DOTBOX_HEIGHT);
+            _octaveDotBox.setRect(0, _noteNumberBox.y() + _noteNumberBox.height() + OCTAVE_DOTBOX_Y_OFFSET_MAG,
+                                  _noteNumberBox.width() , OCTAVE_DOTBOX_HEIGHT_MAG);
             }
       else if (_noteOctave > 0) {
             // Upper octave.
-            _octaveDotBox.setRect(0, _noteNumberBox.y() - OCTAVE_DOTBOX_HEIGHT - OCTAVE_DOTBOX_Y_OFFSET,
-                                  _noteNumberBox.width(), OCTAVE_DOTBOX_HEIGHT);
+            _octaveDotBox.setRect(0, _noteNumberBox.y() - OCTAVE_DOTBOX_HEIGHT_MAG - OCTAVE_DOTBOX_Y_OFFSET_MAG,
+                                  _noteNumberBox.width(), OCTAVE_DOTBOX_HEIGHT_MAG);
             }
       else {
             // No octave.
@@ -579,7 +590,7 @@ void JianpuNote::draw(QPainter* painter) const
       QString txt = QString::number(_noteNumber);
       StaffType* st = staff()->staffType(tick());
       QFont f(st->jianpuNoteFont());
-      f.setPointSizeF(f.pointSizeF() * MScore::pixelRatio);
+      f.setPointSizeF(f.pointSizeF() * MScore::pixelRatio * mag());
       painter->setFont(f);
       painter->setPen(QColor(curColor()));
       // We take bounding box y-position as top of the note number.
@@ -609,30 +620,30 @@ void JianpuNote::draw(QPainter* painter) const
             // Start drawing dots at top of _octaveDotBox.
             dotCount = -_noteOctave;
             y = pos().y() + _octaveDotBox.y();
-            yOffset = OCTAVE_DOT_ROW_HEIGHT;
+            yOffset = OCTAVE_DOT_ROW_HEIGHT_MAG;
             }
       else if (_noteOctave > 0) {
             // Upper octave.
             // Start drawing dots at bottom of _octaveDotBox.
             dotCount = _noteOctave;
-            y = pos().y() + _octaveDotBox.y() + _octaveDotBox.height() - OCTAVE_DOT_ROW_HEIGHT;
-            yOffset = -OCTAVE_DOT_ROW_HEIGHT;
+            y = pos().y() + _octaveDotBox.y() + _octaveDotBox.height() - OCTAVE_DOT_ROW_HEIGHT_MAG;
+            yOffset = -OCTAVE_DOT_ROW_HEIGHT_MAG;
             }
       if (dotCount == 1) {
             // Draw dot at middle of _octaveDotBox.
-            x = pos().x() + _octaveDotBox.x() + (_octaveDotBox.width() - OCTAVE_DOT_WIDTH) / 2;
+            x = pos().x() + _octaveDotBox.x() + (_octaveDotBox.width() - OCTAVE_DOT_WIDTH_MAG) / 2;
             xOffset = 0;
             }
       else if (dotCount > 1) {
             // Start drawing dots at left side of _octaveDotBox.
-            x = pos().x() + _octaveDotBox.x() + OCTAVE_DOT_X_SPACE / 2;
-            xOffset = OCTAVE_DOT_COL_WIDTH;
+            x = pos().x() + _octaveDotBox.x() + OCTAVE_DOT_X_SPACE_MAG / 2;
+            xOffset = OCTAVE_DOT_COL_WIDTH_MAG;
             }
       // Draw octave dots.
       if (dotCount > MAX_OCTAVE_DOTS)
             dotCount = MAX_OCTAVE_DOTS;
       qreal xStart = x;
-      QRectF rect(0, 0, OCTAVE_DOT_WIDTH, OCTAVE_DOT_HEIGHT);
+      QRectF rect(0, 0, OCTAVE_DOT_WIDTH_MAG, OCTAVE_DOT_HEIGHT_MAG);
       for (int i = 0; i < dotCount; i++) {
             rect.moveTo(x, y);
             painter->drawEllipse(rect);
