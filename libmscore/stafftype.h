@@ -250,7 +250,7 @@ class StaffType {
 
       // Jianpu: configurable properties
       // TODO: read them from configuration file.
-      QFont _jianpuNoteFont = QFont("FreeSerif", 11.0, QFont::Bold); // font used to draw Jianpu notes/rests.
+      QFont _jianpuNoteFont = QFont("CHWJP4C", 11.0, QFont::Normal); // font used to draw Jianpu notes/rests.
       qreal _jianpuNoteFontSize  = 11.0;  // the size (in points) for the Jianpu note/rest font.
       QFont _jianpuKeyFont = QFont("FreeSerif", 11.0, QFont::Bold); // font used to draw Jianpu key signature.
       qreal _jianpuKeyFontSize  = 11.0;   // the size (in points) for the Jianpu key signature font.
