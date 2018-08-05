@@ -350,7 +350,7 @@ void JianpuChord::layout()
             qreal x = 0.0;
             qreal y = JianpuNote::NOTE_BASELINE * spatium() * 0.5;
             for (int j = 1; j <= i; j++)
-                  y -= _notes.at(j)->height();
+                  y -= _notes.at(j)->height() + _notes.at(j)->bbox().y() - _notes.at(j-1)->bbox().y();
             note->setPos(x, y);
 
             qreal x1 = note->pos().x() + chordX;

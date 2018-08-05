@@ -38,8 +38,12 @@ void JianpuHook::layout()
       {
       // Calculate and set hook's position.
       // Jianpu bar-line span: -4 to +4
-      qreal x = 0.0;
-      qreal y = JianpuNote::NOTE_BASELINE * spatium() * 0.5;
+      const Note* note = chord()->notes().at(0);
+      const JianpuNote* jn = dynamic_cast<const JianpuNote*>(note);
+      Q_ASSERT(jn != NULL);
+      qreal x = jn->pos().x();
+      // locate y to bottom of numerical note, NOT the bottom of octave dots
+      qreal y = jn->pos().y() + jn->noteNumberBox().height(); 
       setPos(x, y);
       setbbox(QRectF());
 
@@ -47,25 +51,25 @@ void JianpuHook::layout()
       int beamCount = chord()->durationType().hooks();
       if (beamCount > 0) {
             qreal beamDistance = JianpuNote::BEAM_HEIGHT + JianpuNote::BEAM_Y_SPACE;
-            const Note* note = chord()->notes().at(0);
-            qreal x1 = note->pos().x();
-            qreal x2 = x1 + note->bbox().width();
-            y = note->pos().y() + note->bbox().height();
-            const JianpuNote* jn = dynamic_cast<const JianpuNote*>(note);
-            if (jn && jn->noteOctave() >= 0) {
-                  // Note's bounding box does not include space for lower-octave dots.
-                  // Add octave-dot box y-offset to align with beams of other notes.
-                  y += JianpuNote::OCTAVE_DOTBOX_Y_OFFSET + JianpuNote::OCTAVE_DOTBOX_HEIGHT;
-                  }
+            
+            y = 0;
+            qreal width = note->bbox().width();
+            // y = note->pos().y() + note->bbox().y() + note->bbox().height() - JianpuNote::NOTE_BASELINE * spatium() * 0.5;
+            
+            // if (jn && jn->noteOctave() >= 0) {
+            //       // Note's bounding box does not include space for lower-octave dots.
+            //       // Add octave-dot box y-offset to align with beams of other notes.
+            //       y += JianpuNote::OCTAVE_DOTBOX_Y_OFFSET + JianpuNote::OCTAVE_DOTBOX_HEIGHT;
+            //       }
             // Clean beams generated in the last call to avoid redrawing.
             _durationBeams.clear();
             for (int i = 0; i < beamCount; i++) {
-                  _durationBeams.push_back(new QLineF(x1, y, x2, y));
-                  addbbox(QRectF(x1, y, x2 - x1, beamDistance));
+                  _durationBeams.push_back(new QLineF(0, y, width, y));
+                  addbbox(QRectF(0, y, width, beamDistance));
                   y += beamDistance;
                   }
             }
-      qDebug("count of durationbeams: %d ",_durationBeams.size());
+      // qDebug("count of durationbeams: %d ",_durationBeams.size());
       //qDebug("bbox x=%.0f y=%.0f w=%.0f h=%.0f", bbox().x(), bbox().y(), bbox().width(), bbox().height());
       //Q_ASSERT(bbox().x() < 20000 && bbox().y() < 20000);
       //Q_ASSERT(bbox().width() < 20000 && bbox().height() < 20000);

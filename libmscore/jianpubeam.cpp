@@ -153,8 +153,24 @@ void JianpuBeam::layout()
 
       // Calculate and set beam's position.
       // Jianpu bar-line span: -4 to +4
-      qreal x = 0.0;
-      qreal y = JianpuNote::NOTE_BASELINE * spatium() * 0.5;
+      // Set the first beam's y position.
+      const ChordRest* cr = _elements.front();
+      qreal x,y;
+      if (cr->isChord()) {
+            const Note* note = toChord(cr)->notes().at(0);
+            const JianpuNote* jn = dynamic_cast<const JianpuNote*>(note);
+            x = jn->pos().x(); // the left most node
+            Q_ASSERT(jn != NULL);
+            y = jn->pos().y() + jn->noteNumberBox().height();
+      }
+      else if (cr->isRest()){
+            const Rest* rest = toRest(cr);
+            x = rest->pos().x();
+            y = rest->pos().y() + rest->bbox().height();
+      }
+      
+      
+      // qreal y = JianpuNote::NOTE_BASELINE * spatium() * 0.5;
       setPos(x, y);
 
       System* system = _elements.front()->measure()->system();
@@ -168,26 +184,26 @@ void JianpuBeam::layout()
       for (const ChordRest* c : _elements)
             beamLevels = qMax(beamLevels, c->durationType().hooks());
 
-      // Set the first beam's y position.
-      const ChordRest* cr = _elements.front();
-      y = cr->pos().y() - pagePosition.y();
-      if (cr->isChord()) {
-            const Note* note = toChord(cr)->notes().at(0);
-            y = note->pos().y() + note->bbox().height();
-            const JianpuNote* jn = dynamic_cast<const JianpuNote*>(note);
-            if (jn && jn->noteOctave() >= 0) {
-                  // Note's bounding box does not include space for lower-octave dots.
-                  // Add octave-dot box y-offset to align with beams of other notes.
-                  y += JianpuNote::OCTAVE_DOTBOX_Y_OFFSET + JianpuNote::OCTAVE_DOTBOX_HEIGHT;
-                  }
-            }
-      else if (cr->isRest()){
-            const Rest* rest = toRest(cr);
-            y = rest->pos().y() + rest->bbox().height();
-            // Rest's bounding box does not include space for lower-octave dots.
-            // Add octave-dot box y-offset to align with beams of other notes.
-            y += JianpuNote::OCTAVE_DOTBOX_Y_OFFSET + JianpuNote::OCTAVE_DOTBOX_HEIGHT;
-            }
+      y = 0;
+      // y = cr->pos().y() - pagePosition.y() - JianpuNote::NOTE_BASELINE * spatium() * 0.5;
+
+      // if (cr->isChord()) {
+            
+      //       // y = note->pos().y() + note->bbox().y() + note->bbox().height() - JianpuNote::NOTE_BASELINE * spatium() * 0.5;
+            
+      //       if (jn && jn->noteOctave() >= 0) {
+      //             // Note's bounding box does not include space for lower-octave dots.
+      //             // Add octave-dot box y-offset to align with beams of other notes.
+      //             y += JianpuNote::OCTAVE_DOTBOX_Y_OFFSET + JianpuNote::OCTAVE_DOTBOX_HEIGHT;
+      //             }
+      //       }
+      // else if (cr->isRest()){
+      //       const Rest* rest = toRest(cr);
+      //       y = rest->pos().y() + rest->bbox().height();
+      //       // Rest's bounding box does not include space for lower-octave dots.
+      //       // Add octave-dot box y-offset to align with beams of other notes.
+      //       y += JianpuNote::OCTAVE_DOTBOX_Y_OFFSET + JianpuNote::OCTAVE_DOTBOX_HEIGHT;
+      //       }
       qreal beamDistance = JianpuNote::BEAM_HEIGHT + JianpuNote::BEAM_Y_SPACE;
 
       // Create beam segments.
@@ -229,9 +245,9 @@ void JianpuBeam::layout()
                   ChordRest* cr2 = _elements[c2];
                   x2 = cr2->pos().x() + cr2->pageX() - pagePosition.x() + cr2->bbox().width();
                   // Add beam segment.
-                  beamSegments.push_back(new QLineF(x1, y, x2, y));
+                  beamSegments.push_back(new QLineF(x1 - x, y, x2 - x, y));
                   // Update bounding box.
-                  addbbox(QRectF(x1, y, x2 - x1, beamDistance));
+                  addbbox(QRectF(x1 - x, y, x2 - x1, beamDistance));
 
                   // Update i index with last scanned location and loop again for more groups.
                   i = j;
