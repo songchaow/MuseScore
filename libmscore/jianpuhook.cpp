@@ -38,20 +38,21 @@ void JianpuHook::layout()
       {
       // Calculate and set hook's position.
       // Jianpu bar-line span: -4 to +4
+      qreal mag = chord()->mag();
       const Note* note = chord()->notes().at(0);
       const JianpuNote* jn = dynamic_cast<const JianpuNote*>(note);
       Q_ASSERT(jn != NULL);
       qreal x = jn->pos().x();
-      // locate y to bottom of numerical note, NOT the bottom of octave dots
-      qreal y = jn->pos().y() + jn->noteNumberBox().height(); 
+      // locate y to bottom of numerical note(NOT the bottom of octave dots), plus some margin
+      qreal y = jn->pos().y() + jn->noteNumberBox().height() + JianpuNote::BEAM_Y_OFFSET * mag; 
       setPos(x, y);
       setbbox(QRectF());
 
       // Lay out the duration beams underneath the note number.
       int beamCount = chord()->durationType().hooks();
       if (beamCount > 0) {
-            qreal beamDistance = JianpuNote::BEAM_HEIGHT + JianpuNote::BEAM_Y_SPACE;
-            
+            qreal beamDistance = JianpuNote::BEAM_HEIGHT + JianpuNote::BEAM_Y_SPACE * mag;
+            beamDistance *= jn->mag();
             y = 0;
             qreal width = note->bbox().width();
             // y = note->pos().y() + note->bbox().y() + note->bbox().height() - JianpuNote::NOTE_BASELINE * spatium() * 0.5;
@@ -82,7 +83,8 @@ void JianpuHook::draw(QPainter* painter) const
             QBrush brush(curColor(), Qt::SolidPattern);
             painter->setBrush(brush);
             painter->setPen(Qt::NoPen);
-            qreal height = JianpuNote::BEAM_HEIGHT;
+            qreal mag = chord()->notes().at(0)->mag();
+            qreal height = JianpuNote::BEAM_HEIGHT * mag;
             for (const QLineF* line : _durationBeams) {
                   QRectF beam(line->x1(), line->y1(), line->length(), height);
                   painter->fillRect(beam, brush);

@@ -154,6 +154,7 @@ void JianpuBeam::layout()
       // Calculate and set beam's position.
       // Jianpu bar-line span: -4 to +4
       // Set the first beam's y position.
+      qreal mag = _elements.first()->mag();
       const ChordRest* cr = _elements.front();
       qreal x,y;
       if (cr->isChord()) {
@@ -161,12 +162,12 @@ void JianpuBeam::layout()
             const JianpuNote* jn = dynamic_cast<const JianpuNote*>(note);
             x = jn->pos().x(); // the left most node
             Q_ASSERT(jn != NULL);
-            y = jn->pos().y() + jn->noteNumberBox().height();
+            y = jn->pos().y() + jn->noteNumberBox().height() + JianpuNote::BEAM_Y_OFFSET * mag;
       }
       else if (cr->isRest()){
             const Rest* rest = toRest(cr);
             x = rest->pos().x();
-            y = rest->pos().y() + rest->bbox().height();
+            y = rest->pos().y() + rest->bbox().height() + JianpuNote::BEAM_Y_OFFSET * mag;
       }
       
       
@@ -204,7 +205,7 @@ void JianpuBeam::layout()
       //       // Add octave-dot box y-offset to align with beams of other notes.
       //       y += JianpuNote::OCTAVE_DOTBOX_Y_OFFSET + JianpuNote::OCTAVE_DOTBOX_HEIGHT;
       //       }
-      qreal beamDistance = JianpuNote::BEAM_HEIGHT + JianpuNote::BEAM_Y_SPACE;
+      qreal beamDistance = (JianpuNote::BEAM_HEIGHT + JianpuNote::BEAM_Y_SPACE) * mag;
 
       // Create beam segments.
       int n = _elements.size();
@@ -270,7 +271,8 @@ void JianpuBeam::draw(QPainter* painter) const
       QBrush brush(curColor(), Qt::SolidPattern);
       painter->setBrush(brush);
       painter->setPen(Qt::NoPen);
-      qreal height = JianpuNote::BEAM_HEIGHT;
+      qreal mag = _elements.first()->mag();
+      qreal height = JianpuNote::BEAM_HEIGHT * mag;
       for (const QLineF* line : beamSegments) {
             QRectF beam(line->x1(), line->y1(), line->length(), height);
             painter->fillRect(beam, brush);
