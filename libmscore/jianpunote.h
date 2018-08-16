@@ -78,7 +78,7 @@ class JianpuNote : public Note {
 
       static const int BEAM_HEIGHT = 4;
       static const int BEAM_Y_SPACE = 8;       // Vertical Space between beams
-      //static const int BEAM_Y_OFFSET = 10;     // Y-offset between note(octave-dots)/rest and beam
+      static const int BEAM_Y_OFFSET = 4;     // Y-offset between note(octave-dots)/rest and beam
 
       JianpuNote(Score* score = 0);
       JianpuNote(const Note& note, bool link = false);

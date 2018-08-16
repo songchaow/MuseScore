@@ -480,7 +480,8 @@ void JianpuNote::layout()
       StaffType* st = staff()->staffType(tick());
       QFontMetricsF fm(st->jianpuNoteFont(), MScore::paintDevice());
       QString txt = QString::number(_noteNumber);
-      QRectF rect = fm.tightBoundingRect(txt);
+      QRectF rect = fm.boundingRect(txt);
+      rect = fm.boundingRect(rect, Qt::AlignCenter, txt);
       // apply magnitude
       rect.setRect(0, 0, rect.width() * mag(), rect.height() * mag());
       OCTAVE_DOTBOX_HEIGHT_MAG = OCTAVE_DOTBOX_HEIGHT * mag();
@@ -493,8 +494,7 @@ void JianpuNote::layout()
       OCTAVE_DOT_X_SPACE_MAG = OCTAVE_DOT_X_SPACE * mag();
       OCTAVE_DOT_Y_SPACE_MAG = OCTAVE_DOT_Y_SPACE * mag();
       // Font bounding rectangle height is too large; make it smaller.
-      //_noteNumberBox.setRect(0, 0, rect.width() * FONT_BBOX_WIDTH_RATIO, rect.height() * FONT_BBOX_HEIGHT_RATIO);
-      _noteNumberBox.setRect(0, 0, rect.width(), rect.height() );
+      _noteNumberBox.setRect(0, 0, rect.width() , rect.height() * FONT_BBOX_HEIGHT_RATIO);
 
       // Lay out octave-dot box.
       if (_noteOctave < 0) {
