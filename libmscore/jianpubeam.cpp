@@ -242,9 +242,9 @@ void JianpuBeam::layout()
                   c2 = j - 1;
                   // Calculate x-values of beam segment.
                   cr1 = _elements[c1];
-                  x1 = cr1->pos().x() + cr1->pageX() - pagePosition.x();
+                  x1 = cr1->pageX() - pagePosition.x();
                   ChordRest* cr2 = _elements[c2];
-                  x2 = cr2->pos().x() + cr2->pageX() - pagePosition.x() + cr2->bbox().width();
+                  x2 = cr2->pageX() - pagePosition.x() + cr2->bbox().width();
                   // Add beam segment.
                   beamSegments.push_back(new QLineF(x1 - x, y, x2 - x, y));
                   // Update bounding box.
