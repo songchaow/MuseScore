@@ -482,34 +482,34 @@ void JianpuNote::layout()
       QString txt = QString::number(_noteNumber);
       QRectF rect = fm.boundingRect(txt);
       rect = fm.boundingRect(rect, Qt::AlignCenter, txt);
+
       // apply magnitude
       rect.setRect(0, 0, rect.width() * mag(), rect.height() * mag());
-      OCTAVE_DOTBOX_HEIGHT_MAG = OCTAVE_DOTBOX_HEIGHT * mag();
-      OCTAVE_DOTBOX_WIDTH_MAG = OCTAVE_DOTBOX_WIDTH * mag();
-      OCTAVE_DOTBOX_Y_OFFSET_MAG = OCTAVE_DOTBOX_Y_OFFSET * mag();
-      OCTAVE_DOT_COL_WIDTH_MAG = OCTAVE_DOT_COL_WIDTH * mag();
-      OCTAVE_DOT_ROW_HEIGHT_MAG = OCTAVE_DOT_COL_WIDTH * mag();
-      OCTAVE_DOT_WIDTH_MAG = OCTAVE_DOT_WIDTH * mag();
-      OCTAVE_DOT_HEIGHT_MAG = OCTAVE_DOT_HEIGHT * mag();
-      OCTAVE_DOT_X_SPACE_MAG = OCTAVE_DOT_X_SPACE * mag();
-      OCTAVE_DOT_Y_SPACE_MAG = OCTAVE_DOT_Y_SPACE * mag();
       // Font bounding rectangle height is too large; make it smaller.
       _noteNumberBox.setRect(0, 0, rect.width() , rect.height() * FONT_BBOX_HEIGHT_RATIO);
 
       // Lay out octave-dot box.
+	  if (_octavedots == nullptr && _noteOctave != 0) {
+		  _octavedots = new OctaveDot(score());
+		  _octavedots->setParent(this);
+	  }
       if (_noteOctave < 0) {
             // Lower octave.
-            _octaveDotBox.setRect(0, _noteNumberBox.y() + _noteNumberBox.height() + OCTAVE_DOTBOX_Y_OFFSET_MAG,
-                                  _noteNumberBox.width() , OCTAVE_DOTBOX_HEIGHT_MAG);
+			_octavedots->setDotDirection(OctaveDot::DotDirection::BOTTOM);
+			_octavedots->setDotCount(-_noteOctave);
+			_octavedots->layout();
             }
       else if (_noteOctave > 0) {
             // Upper octave.
-            _octaveDotBox.setRect(0, _noteNumberBox.y() - OCTAVE_DOTBOX_HEIGHT_MAG - OCTAVE_DOTBOX_Y_OFFSET_MAG,
-                                  _noteNumberBox.width(), OCTAVE_DOTBOX_HEIGHT_MAG);
+			_octavedots->setDotDirection(OctaveDot::DotDirection::TOP);
+			_octavedots->setDotCount(_noteOctave);
+			_octavedots->layout();
             }
       else {
             // No octave.
-            _octaveDotBox.setRect(0, 0, 0, 0);
+			if (_octavedots)
+				delete _octavedots;
+			_octavedots = nullptr;
             }
 
       // Lay out duration-dash box for base note of the chord.
@@ -521,7 +521,7 @@ void JianpuNote::layout()
             }
 
       // Update main bounding box.
-      setbbox(_noteNumberBox | _octaveDotBox | _durationDashBox);
+      setbbox(_noteNumberBox | _durationDashBox);
 
       //qDebug("bbox x=%.0f y=%.0f w=%.0f h=%.0f", bbox().x(), bbox().y(), bbox().width(), bbox().height());
       //Q_ASSERT(bbox().x() < 20000 && bbox().y() < 20000);
@@ -581,6 +581,13 @@ void JianpuNote::layout2()
       //Q_ASSERT(bbox().width() < 20000 && bbox().height() < 20000);
       }
 
+void JianpuNote::scanElements(void * data, void(*func)(void *, Element *), bool all)
+	{
+	Note::scanElements(data, func, all);
+	if (_octavedots)
+		func(data, _octavedots);
+	}
+
 void JianpuNote::draw(QPainter* painter) const
       {
       if (hidden())
@@ -599,68 +606,10 @@ void JianpuNote::draw(QPainter* painter) const
       painter->drawText(QPointF( _noteNumberBox.x(),
                                  _noteNumberBox.y() + _noteNumberBox.height()), txt);
 
-      // Prepare paint brush for octave dots and duration dash drawing.
+      // Prepare paint brush for duration dash drawing.
       QBrush brush(curColor(), Qt::SolidPattern);
       painter->setBrush(brush);
       painter->setPen(Qt::NoPen);
-
-      // Draw octave dots in 2x2 square as shown below for lower octaves.
-      //    o   o o    o o    o o
-      //                o     o o
-      // Shapes of upper octaves are mirror image of lower-octave shapes.
-      //
-      // Initialize starting position and offsets.
-      int dotCount = 0;
-      qreal x = 0;
-      qreal y = 0;
-      qreal xOffset = 0;
-      qreal yOffset = 0;
-      if (_noteOctave < 0) {
-            // Lower octave.
-            // Start drawing dots at top of _octaveDotBox.
-            dotCount = -_noteOctave;
-            y =  _octaveDotBox.y();
-            yOffset = OCTAVE_DOT_ROW_HEIGHT_MAG;
-            }
-      else if (_noteOctave > 0) {
-            // Upper octave.
-            // Start drawing dots at bottom of _octaveDotBox.
-            dotCount = _noteOctave;
-            y =  _octaveDotBox.y() + _octaveDotBox.height() - OCTAVE_DOT_ROW_HEIGHT_MAG;
-            yOffset = -OCTAVE_DOT_ROW_HEIGHT_MAG;
-            }
-      if (dotCount == 1) {
-            // Draw dot at middle of _octaveDotBox.
-            x =  _octaveDotBox.x() + (_octaveDotBox.width() - OCTAVE_DOT_WIDTH_MAG) / 2;
-            xOffset = 0;
-            }
-      else if (dotCount > 1) {
-            // Start drawing dots at left side of _octaveDotBox.
-            x =  _octaveDotBox.x() + OCTAVE_DOT_X_SPACE_MAG / 2;
-            xOffset = OCTAVE_DOT_COL_WIDTH_MAG;
-            }
-      // Draw octave dots.
-      if (dotCount > MAX_OCTAVE_DOTS)
-            dotCount = MAX_OCTAVE_DOTS;
-      qreal xStart = x;
-      QRectF rect(0, 0, OCTAVE_DOT_WIDTH_MAG, OCTAVE_DOT_HEIGHT_MAG);
-      for (int i = 0; i < dotCount; i++) {
-            rect.moveTo(x, y);
-            painter->drawEllipse(rect);
-            if (i & 1) {
-                  // Start next row.
-                  if (dotCount == 3)
-                        // Draw dot at middle of _octaveDotBox.
-                        x = _octaveDotBox.x() + (_octaveDotBox.width() - OCTAVE_DOT_WIDTH) / 2;
-                  else
-                        x = xStart;
-                  y += yOffset;
-                  }
-            else {
-                  // Stay in the same row.
-                  x += xOffset;
-                  }
-            }
 
       // Draw duration dashes for whole and half notes.
       // Draw dashes only for the base-note of the chord.

@@ -24,6 +24,7 @@
 #include "shape.h"
 #include "note.h"
 #include "durationtype.h"
+#include "octavedot.h"
 
 class QPainter;
 
@@ -35,6 +36,7 @@ class Score;
 class Sym;
 class StaffType;
 class TDuration;
+class OctaveDot;
 enum class SymId;
 
 
@@ -56,18 +58,7 @@ class JianpuNote : public Note {
       static const int MAX_OCTAVE_DOTS = 4;
       static const int MAX_OCTAVE_COLS = 2;
       static const int MAX_OCTAVE_ROWS = 2;
-      static const int OCTAVE_DOT_WIDTH = 10;
-      static const int OCTAVE_DOT_HEIGHT = 10;
-      static const int OCTAVE_DOT_X_SPACE = 3;  // Horizontal Space between octave dots
-      static const int OCTAVE_DOT_Y_SPACE = 3;  // Vertical Space between octave dots
-      static const int OCTAVE_DOT_COL_WIDTH = OCTAVE_DOT_WIDTH + OCTAVE_DOT_X_SPACE;
-      static const int OCTAVE_DOT_ROW_HEIGHT = OCTAVE_DOT_HEIGHT + OCTAVE_DOT_Y_SPACE;
-      static const int OCTAVE_DOTBOX_WIDTH = MAX_OCTAVE_COLS * OCTAVE_DOT_COL_WIDTH; // For 2x2 dots
-      static const int OCTAVE_DOTBOX_HEIGHT = MAX_OCTAVE_ROWS * OCTAVE_DOT_ROW_HEIGHT; // For 2x2 dots
-      static const int OCTAVE_DOTBOX_Y_OFFSET = 10;  // Y-offset between octave dot and note number boxes
-      // real arguments after applied magnitude
-      qreal OCTAVE_DOT_WIDTH_MAG, OCTAVE_DOT_HEIGHT_MAG, OCTAVE_DOT_X_SPACE_MAG, OCTAVE_DOT_Y_SPACE_MAG,
-            OCTAVE_DOT_COL_WIDTH_MAG, OCTAVE_DOT_ROW_HEIGHT_MAG, OCTAVE_DOTBOX_WIDTH_MAG, OCTAVE_DOTBOX_HEIGHT_MAG, OCTAVE_DOTBOX_Y_OFFSET_MAG;
+      
       static const int DURATION_DASH_X_SPACE = 30;   // Horizontal Space between duration dashes
       static const int DURATION_DASH_WIDTH = 30;
       static const int DURATION_DASH_HEIGHT = 8;
@@ -98,6 +89,7 @@ class JianpuNote : public Note {
       virtual void setDotY(Direction) override;
       virtual void layout() override;
       virtual void layout2() override;
+	  virtual void scanElements(void* data, void(*func)(void*, Element*), bool all = true) override;
       virtual void draw(QPainter*) const override;
 
       void setNoteByNumber(int number, int octave, TDuration::DurationType duration);
@@ -124,6 +116,7 @@ class JianpuNote : public Note {
       QRectF _noteNumberBox;      ///< Bounding box for note number
       QRectF _octaveDotBox;       ///< Bounding box for lower or uppper octave dots
       QRectF _durationDashBox;    ///< Bounding box for duration dashes
+      OctaveDot* _octavedots = nullptr;
       };
 
 }     // namespace Ms

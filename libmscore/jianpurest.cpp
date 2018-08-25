@@ -125,9 +125,7 @@ void JianpuRest::layout()
             qreal beamDistance = JianpuNote::BEAM_HEIGHT + JianpuNote::BEAM_Y_SPACE;
             qreal x1 = pos().x();
             qreal x2 = x1 + bbox().width();
-            // Add octave-dot box y-offset to align rest beams with note beams.
-            y = pos().y() + bbox().height() +
-                        JianpuNote::OCTAVE_DOTBOX_Y_OFFSET + JianpuNote::OCTAVE_DOTBOX_HEIGHT;
+			y = pos().y() + bbox().height();
             for (int i = 0; i < beamCount; i++) {
                   _durationBeams.push_back(new QLineF(x1, y, x2, y));
                   y += beamDistance;

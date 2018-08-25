@@ -128,7 +128,8 @@ enum class ElementType {
       OSSIA,
       BAGPIPE_EMBELLISHMENT,
 
-      MAXTYPE
+      MAXTYPE,
+      OCTAVE_DOT
       };
 
 

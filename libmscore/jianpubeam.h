@@ -48,6 +48,19 @@ class JianpuBeam : public Beam {
 
       virtual void layout() override;
       virtual void draw(QPainter*) const override;
+	  virtual qreal mag() const override;
+
+	  // get max depth of beam in current horizontal position
+	  // x: position relative to beam's position
+	  qreal getBeamDepth(qreal x);
+
+	  const QVector<QLineF*>& getBeamSegmentsCache() const { return beamSegmentsCache; }
+
+	private:
+	  // Member `beamSegments` will be cleared in `createBeams()` method before Chord's `layout()` is called.
+	  // But Octavedot's `layout()` needs `beamSegments` to locate dots vertical location.
+	  // So we use this member as a backup.
+	  QVector<QLineF*> beamSegmentsCache;
       };
 
 } // namespace Ms

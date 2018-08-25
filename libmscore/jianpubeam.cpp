@@ -149,14 +149,14 @@ void JianpuBeam::write(XmlWriter& xml) const
 
 void JianpuBeam::layout()
       {
-      // Always put the horizontal beams underneath the chords/rests.
+	  beamSegmentsCache.clear();
 
       // Calculate and set beam's position.
       // Jianpu bar-line span: -4 to +4
       // Set the first beam's y position.
-      qreal mag = _elements.first()->mag();
+	  qreal mag = this->mag();
       const ChordRest* cr = _elements.front();
-      qreal x,y;
+	  qreal x = 0, y = 0;
       if (cr->isChord()) {
             const Note* note = toChord(cr)->notes().at(0);
             const JianpuNote* jn = dynamic_cast<const JianpuNote*>(note);
@@ -247,6 +247,7 @@ void JianpuBeam::layout()
                   x2 = cr2->pageX() - pagePosition.x() + cr2->bbox().width();
                   // Add beam segment.
                   beamSegments.push_back(new QLineF(x1 - x, y, x2 - x, y));
+				  beamSegmentsCache.push_back(new QLineF(x1 - x, y, x2 - x, y));
                   // Update bounding box.
                   addbbox(QRectF(x1 - x, y, x2 - x1, beamDistance));
 
@@ -278,5 +279,20 @@ void JianpuBeam::draw(QPainter* painter) const
             painter->fillRect(beam, brush);
             }
       }
+
+qreal JianpuBeam::mag() const
+{
+	return _elements.first()->mag();
+}
+
+qreal JianpuBeam::getBeamDepth(qreal x) {
+	qreal depth = 0;
+	for (QLineF* line : beamSegmentsCache) {
+		if (line->x1() < x && line->x2() > x)
+			if (line->y1() > depth)
+				depth = line->y1();
+		}
+	return depth;
+	}
 
 } // namespace Ms
