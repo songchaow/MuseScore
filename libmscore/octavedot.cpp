@@ -46,12 +46,12 @@ namespace Ms{
 			auto jpx = jbeam->pageX();
 			auto cwidth = chord->width() / 2;
 			qreal depth;
-			if (jbeam->getBeamSegmentsCache().empty()) {
+			//if (jbeam->getBeamSegmentsCache().empty()) {
 				// beams' layout() hasn't been called before. Estimate the proper depth according to hook count.
 				qreal beamDistance = (JianpuNote::BEAM_HEIGHT + JianpuNote::BEAM_Y_SPACE) * jbeam->mag();
 				depth = (chord->beams() > 1 ? chord->beams() - 1 : 0)*beamDistance + noteNumberBox.height();
-				}
-			else depth = jbeam->getBeamDepth(xoff) + jbeam->pagePos().y() - parent()->pagePos().y();
+			
+			//else depth = jbeam->getBeamDepth(xoff) + jbeam->pagePos().y() - parent()->pagePos().y();
 			setPos(0, depth + OCTAVE_DOTBOX_Y_OFFSET * mag());
 		}
 		else

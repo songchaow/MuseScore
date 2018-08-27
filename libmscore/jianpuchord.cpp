@@ -343,7 +343,6 @@ void JianpuChord::layout()
       int noteCount = _notes.size();
       for (int i = 0; i < noteCount; i++) {
             Note* note = _notes.at(i);
-            note->layout();
 
             // Calculate and set note's position in the chord.
             // Jianpu bar-line span: -4 to +4
@@ -352,6 +351,8 @@ void JianpuChord::layout()
             for (int j = 1; j <= i; j++)
                   y -= _notes.at(j)->height() + _notes.at(j)->bbox().y() - _notes.at(j-1)->bbox().y();
             note->setPos(x, y);
+
+            note->layout();
 
             qreal x1 = note->pos().x() + chordX;
             qreal x2 = x1 + note->width();
