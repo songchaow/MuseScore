@@ -45,7 +45,6 @@ void JianpuBeam::read(XmlReader& xml)
       {
       QPointF p1, p2;
       //qreal _spatium = spatium();
-      _id = xml.intAttribute("id");
       while (xml.readNextStartElement()) {
             const QStringRef& tag(xml.name());
 #if 0
@@ -116,7 +115,7 @@ void JianpuBeam::write(XmlWriter& xml) const
       if (_elements.empty())
             return;
 
-      xml.stag(QString("Beam id=\"%1\"").arg(_id));
+	  xml.stag(name());
       Element::writeProperties(xml);
 
 #if 0
@@ -160,8 +159,8 @@ void JianpuBeam::layout()
       if (cr->isChord()) {
             const Note* note = toChord(cr)->notes().at(0);
             const JianpuNote* jn = dynamic_cast<const JianpuNote*>(note);
-            x = jn->pos().x(); // the left most node
             Q_ASSERT(jn != NULL);
+            x = jn->pos().x(); // the left most node
             y = jn->pos().y() + jn->noteNumberBox().height() + JianpuNote::BEAM_Y_OFFSET * mag;
       }
       else if (cr->isRest()){

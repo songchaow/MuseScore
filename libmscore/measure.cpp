@@ -2032,7 +2032,11 @@ void Measure::readVoice(XmlReader& e, int staffIdx, bool irregular)
                         }
                   }
             else if (tag == "Chord") {
-                  Chord* chord = new Chord(score());
+				  Chord* chord;
+				  if (staff->isJianpuStaff(tick()))
+					  chord = new JianpuChord(score());
+                  else
+					  chord = new Chord(score());
                   chord->setTrack(e.track());
                   chord->read(e);
                   if (startingBeam) {

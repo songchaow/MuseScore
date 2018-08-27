@@ -193,9 +193,9 @@ bool JianpuChord::readProperties(XmlReader& xml)
 void JianpuChord::write(XmlWriter& xml) const
       {
       for (Chord* c : _graceNotes) {
-            c->writeBeam(xml);
             c->write(xml);
             }
+      writeBeam(xml);
       xml.stag("Chord");
       ChordRest::writeProperties(xml);
       switch (_noteType) {

@@ -12,7 +12,6 @@
 
 #include "chord.h"
 #include "note.h"
-#include "jianpunote.h"
 #include "xml.h"
 #include "style.h"
 #include "segment.h"
@@ -1001,11 +1000,7 @@ bool Chord::readProperties(XmlReader& e)
       const QStringRef& tag(e.name());
 
       if (tag == "Note") {
-            Note* note;
-            if (staff()->isJianpuStaff(tick()))
-                  note = new JianpuNote(score());
-            else
-                  note = new Note(score());
+            Note* note = new Note(score());
             // the note needs to know the properties of the track it belongs to
             note->setTrack(track());
             note->setChord(this);
@@ -1383,9 +1378,6 @@ void Chord::layoutStem1()
 
 void Chord::layoutStem()
       {
-      if (staff() && staff()->isJianpuStaff(tick()))
-            return;
-
       for (Chord* c : _graceNotes)
             c->layoutStem();
       if (_beam)
