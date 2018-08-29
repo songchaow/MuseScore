@@ -252,6 +252,9 @@ void TimeSig::layout()
                   return;
                   }
             numOfLines  = _staff->lines(tick());
+			if (_staff->isJianpuStaff(tick()))
+				// act as if there are 5 lines
+				numOfLines = 5;
             lineDist    = _staff->lineDistance(tick());
             }
       else {

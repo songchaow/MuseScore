@@ -341,18 +341,32 @@ void JianpuChord::layout()
       //-----------------------------------------
 
       int noteCount = _notes.size();
+	  qreal y0 = 0;
+	  if(noteCount>0) {
+		  Note* firstNote = _notes.at(0);
+		  JianpuNote* firstJNote = dynamic_cast<JianpuNote*>(firstNote);
+		  Q_ASSERT(firstNote != 0 && firstJNote != 0);
+		  // make note number in the midst
+		  if(staff()) {
+			  y0 = (staff()->height() - firstJNote->noteNumberBox().height()) / 2;
+			  }
+          }
+	  
+	  
+	  
       for (int i = 0; i < noteCount; i++) {
             Note* note = _notes.at(i);
+            note->layout();
 
             // Calculate and set note's position in the chord.
             // Jianpu bar-line span: -4 to +4
             qreal x = 0.0;
-            qreal y = JianpuNote::NOTE_BASELINE * spatium() * 0.5;
+			
+			qreal y = y0; // JianpuNote::NOTE_BASELINE * spatium() * 0.5;
             for (int j = 1; j <= i; j++)
                   y -= _notes.at(j)->height() + _notes.at(j)->bbox().y() - _notes.at(j-1)->bbox().y();
             note->setPos(x, y);
 
-            note->layout();
 
             qreal x1 = note->pos().x() + chordX;
             qreal x2 = x1 + note->width();

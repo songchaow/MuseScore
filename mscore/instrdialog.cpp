@@ -331,8 +331,8 @@ void MuseScore::editInstrList()
                               if (staff->isJianpuStaff(0)) {
                                     // Jianpu staff with no lines.
                                     staff->setLines(0, 0);
-                                    staff->setBarLineFrom(BARLINE_SPAN_1LINESTAFF_FROM);
-                                    staff->setBarLineTo(BARLINE_SPAN_1LINESTAFF_TO);
+                                    staff->setBarLineFrom(0);
+                                    staff->setBarLineTo(0);
                                     }
                               staff->setDefaultClefType(sli->defaultClefType());
 

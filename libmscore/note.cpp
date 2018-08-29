@@ -1107,7 +1107,8 @@ void Note::draw(QPainter* painter) const
       {
       if (_hidden || _fretHidden)
             return;
-
+	  painter->setPen(Qt::blue);
+	  painter->drawRect(QRect(-pos().x(), -pos().y(), 10, 10));
       QColor c(curColor());
       painter->setPen(c);
       bool tablature = staff() && staff()->isTabStaff(chord()->tick());

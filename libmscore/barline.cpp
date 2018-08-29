@@ -292,10 +292,10 @@ void BarLine::getY() const
       int from    = _spanFrom;
       int to      = _spanTo;
       int oneOrNoLine = st1->lines() == 1 || st1->lines() == 0;
-      if (oneOrNoLine && _spanFrom == 0)
+      if (oneOrNoLine && _spanFrom == 0 && st1->group()!= StaffGroup::JIANPU)
             from = BARLINE_SPAN_1LINESTAFF_FROM;
       if (!_spanStaff) {
-            if (oneOrNoLine && _spanTo == 0)
+            if (oneOrNoLine && _spanTo == 0 && st1->group()!= StaffGroup::JIANPU)
                   to = BARLINE_SPAN_1LINESTAFF_TO;
             }
 
@@ -308,8 +308,12 @@ void BarLine::getY() const
       y1       = yy + from * d * .5 - lw;
       if (spanStaves)
             y2 = measure->staffLines(staffIdx2)->y1() - yp - to * d * .5;
-      else
-            y2 = yy + (st1->lines() * 2 - 2 + to) * d * .5 + lw;
+	  else {
+		   if (st1->group() == StaffGroup::JIANPU)
+			   y2 = yy + (5 * 2 - 2 + to)*d*.5 + lw;
+		   else
+               y2 = yy + (st1->lines() * 2 - 2 + to) * d * .5 + lw;
+		   }
       }
 
 //---------------------------------------------------------

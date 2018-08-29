@@ -2369,8 +2369,12 @@ static void readStaff(Staff* staff, XmlReader& e)
                   int lines = e.readInt();
                   staff->setLines(0, lines);
                   if (lines != 5) {
-                        staff->setBarLineFrom(lines <= 1 ? BARLINE_SPAN_1LINESTAFF_FROM : 0);
-                        staff->setBarLineTo(lines <= 1 ? BARLINE_SPAN_1LINESTAFF_TO   : (lines - 1) * 2);
+					    // Jianpu staffs are treated like standard staffs.
+					    if(!staff->isJianpuStaff(0)) {
+							// possible cases: one line staff or other staffs
+							staff->setBarLineFrom(lines == 1 ? BARLINE_SPAN_1LINESTAFF_FROM : 0);
+							staff->setBarLineTo(lines == 1 ? BARLINE_SPAN_1LINESTAFF_TO   : (lines - 1) * 2);
+							}
                         }
                   }
             else if (tag == "small")

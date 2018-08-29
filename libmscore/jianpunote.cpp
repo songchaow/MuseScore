@@ -521,7 +521,12 @@ void JianpuNote::layout()
             }
 
       // Update main bounding box.
-      setbbox(_noteNumberBox | _durationDashBox);
+      setbbox(_noteNumberBox | _durationDashBox );
+	  if (_octavedots) {
+		QRectF shiftedOctaveDotsBox = QRectF(_octavedots->bbox());
+		shiftedOctaveDotsBox.moveTo(_octavedots->pos());
+		addbbox(shiftedOctaveDotsBox);
+		}
 
       //qDebug("bbox x=%.0f y=%.0f w=%.0f h=%.0f", bbox().x(), bbox().y(), bbox().width(), bbox().height());
       //Q_ASSERT(bbox().x() < 20000 && bbox().y() < 20000);
@@ -592,7 +597,8 @@ void JianpuNote::draw(QPainter* painter) const
       {
       if (hidden())
             return;
-
+	  painter->setPen(Qt::blue);
+	  painter->drawRect(QRect(0, 0, 10, 10));
       // Draw note number.
       QString txt = QString::number(_noteNumber);
       StaffType* st = staff()->staffType(tick());
