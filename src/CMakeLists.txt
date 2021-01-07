@@ -1,7 +1,7 @@
 
 # Main
 add_subdirectory(main)
-
+add_subdirectory(extractscore)
 # Framework
 add_subdirectory(framework)
 
@@ -86,3 +86,4 @@ endif(BUILD_UNIT_TESTS)
 if (OS_IS_WASM)
     add_subdirectory(wasmtest)
 endif()
+
