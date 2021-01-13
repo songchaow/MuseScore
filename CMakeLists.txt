@@ -218,6 +218,7 @@ endif(BUILD_UNIT_TESTS)
 add_subdirectory(share)
 add_subdirectory(src/framework/global) # should be first to work pch
 add_subdirectory(thirdparty/qzip)
+add_subdirectory(thirdparty/protobuf/cmake)
 add_subdirectory(src)
 
 ###########################################
