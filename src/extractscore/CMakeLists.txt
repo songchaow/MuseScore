@@ -1,7 +1,10 @@
 set(EXECUTABLE_NAME extractscore)
 set(EXECUTABLE_SRC main.cpp)
+set(SERIALIZE_SRC sequence.pb.cc)
+# set(SERIALIZE_HEADER sequence.pb.h)
+set(PROTOBUF_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/protobuf/src)
 
-add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SRC})
+add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SRC} ${SERIALIZE_SRC})
 target_link_libraries(${EXECUTABLE_NAME}
     libmscore
     notation
@@ -22,12 +25,14 @@ target_link_libraries(${EXECUTABLE_NAME}
     instruments
     converter
     fonts
+    libprotobuf
     )
 target_include_directories(${EXECUTABLE_NAME} PUBLIC 
     ${PROJECT_SOURCE_DIR}/src/libmscore
     ${PROJECT_SOURCE_DIR}/src/notation
     ${PROJECT_SOURCE_DIR}/src/framework
     ${PROJECT_SOURCE_DIR}/src/framework/global
+    ${PROTOBUF_INCLUDE_DIR}
     )
 
 if (OS_IS_WIN)

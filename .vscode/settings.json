@@ -51,5 +51,6 @@
         "xutility": "cpp"
     },
     "cmake.buildDirectory": "${workspaceRoot}/build.debug",
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": false,
+    "cmake.configureOnEdit": false
 }

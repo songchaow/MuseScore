@@ -1,0 +1,88 @@
+syntax = "proto3";
+package museprotocol;
+
+message Note {
+    uint32 pitch = 1;
+    uint32 duration = 2;
+    enum Instrument {
+        // Wooodwinds
+        Flute = 0; // Alternative: Piccolo
+        Oboe = 1; // Alternative: English Horn, 
+        Clarinet = 2;
+        Basson = 3;
+        // Strings
+        // Violin = 4;
+        Violins = 4;
+        Violins_pizz = 5;
+        Violins_trem = 6;
+        Violas = 7;
+        Violas_pizz = 8;
+        Violas_trem = 9;
+        Violoncellos = 10;
+        Violoncellos_pizz = 11;
+        Violoncellos_trem = 12;
+        Contrabasses = 13;
+        Contrabasses_pizz = 14;
+        Contrabasses_trem = 15;
+
+        // Brass
+        Trumpet = 16;
+        Horn = 17;
+        Trombone = 18;
+        Tuba = 19;
+        // Keyboards
+        Harp = 20;
+        Piano = 21;
+        // Strike
+        Triangle = 22;      //三角铁
+        Timpany = 23;       //定音鼓
+        Cymbal = 24;        //镲
+
+    }
+    Instrument instrument = 3;
+    enum Volume {
+        Neutral = 0;
+        P = 1;
+        PP = 2;
+        PPP = 3;
+        F = 4;
+        FF = 5;
+        FFF = 6;
+    }
+    Volume vol = 4;
+    bool pizz = 7; // for strings
+    bool tr = 8;
+    bool tr_last = 9;
+}
+
+message Segment {
+    uint32 pBar = 1;
+    uint32 pOffset = 2;
+    enum ChordBase {
+        NOT_CHANGED = 0;
+        A = 1;
+        ASharp = 2;
+        B = 3;
+        C = 4;
+        CSharp = 5;
+        D = 6;
+        DSharp = 7;
+        E = 8;
+        F = 9;
+        FSharp = 10;
+        G = 11;
+        GSharp = 12;
+
+    }
+    enum ChordSubType {
+        Major = 0;
+        Minor = 1;      // m7
+        Dominant = 2;   // Mm7
+        Diminished = 3; // .7
+        HalfDiminished = 4;
+    }
+    repeated Note note = 3;
+    ChordBase cb = 4;
+    ChordSubType ctype = 5;
+    int32 speed = 6;
+}
