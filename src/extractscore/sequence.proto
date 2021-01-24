@@ -41,16 +41,18 @@ message Note {
     }
     Instrument instrument = 3;
     enum Volume {
-        Neutral = 0;
-        P = 1;
+        MF = 0;
+        PPP = 1;
         PP = 2;
-        PPP = 3;
-        F = 4;
-        FF = 5;
-        FFF = 6;
+        P = 3;
+        MP = 4;
+        //MF = 5;
+        F = 5;
+        FF = 6;
+        FFF = 7;
     }
     Volume vol = 4;
-    bool pizz = 7; // for strings
+    bool pizz = 7; // for strings DISCARDED
     bool tr = 8;
     bool tr_last = 9;
 }
@@ -81,8 +83,16 @@ message Segment {
         Diminished = 3; // .7
         HalfDiminished = 4;
     }
+    enum VolumeChange {
+        None = 0;
+        Crescendo = 1;
+        CrescendoLarge = 2;
+        Dim = 3;
+        DimLarge = 4;
+    }
     repeated Note note = 3;
     ChordBase cb = 4;
     ChordSubType ctype = 5;
-    int32 speed = 6;
+    VolumeChange volchange = 6;
+    int32 speed = 7;
 }

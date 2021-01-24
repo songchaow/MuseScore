@@ -53,7 +53,7 @@ static void InitDefaultsscc_info_Segment_sequence_2eproto() {
       &scc_info_Note_sequence_2eproto.base,}};
 
 static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_sequence_2eproto[2];
-static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* file_level_enum_descriptors_sequence_2eproto[4];
+static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* file_level_enum_descriptors_sequence_2eproto[5];
 static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_sequence_2eproto = nullptr;
 
 const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_sequence_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -79,6 +79,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_sequence_2eproto::offsets[] PR
   PROTOBUF_FIELD_OFFSET(::museprotocol::Segment, note_),
   PROTOBUF_FIELD_OFFSET(::museprotocol::Segment, cb_),
   PROTOBUF_FIELD_OFFSET(::museprotocol::Segment, ctype_),
+  PROTOBUF_FIELD_OFFSET(::museprotocol::Segment, volchange_),
   PROTOBUF_FIELD_OFFSET(::museprotocol::Segment, speed_),
 };
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -92,7 +93,7 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 };
 
 const char descriptor_table_protodef_sequence_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\016sequence.proto\022\014museprotocol\"\374\004\n\004Note\022"
+  "\n\016sequence.proto\022\014museprotocol\"\377\004\n\004Note\022"
   "\r\n\005pitch\030\001 \001(\r\022\020\n\010duration\030\002 \001(\r\0221\n\ninst"
   "rument\030\003 \001(\0162\035.museprotocol.Note.Instrum"
   "ent\022&\n\003vol\030\004 \001(\0162\031.museprotocol.Note.Vol"
@@ -106,20 +107,23 @@ const char descriptor_table_protodef_sequence_2eproto[] PROTOBUF_SECTION_VARIABL
   "ses\020\r\022\025\n\021Contrabasses_pizz\020\016\022\025\n\021Contraba"
   "sses_trem\020\017\022\013\n\007Trumpet\020\020\022\010\n\004Horn\020\021\022\014\n\010Tr"
   "ombone\020\022\022\010\n\004Tuba\020\023\022\010\n\004Harp\020\024\022\t\n\005Piano\020\025\022"
-  "\014\n\010Triangle\020\026\022\013\n\007Timpany\020\027\022\n\n\006Cymbal\020\030\"E"
-  "\n\006Volume\022\013\n\007Neutral\020\000\022\005\n\001P\020\001\022\006\n\002PP\020\002\022\007\n\003"
-  "PPP\020\003\022\005\n\001F\020\004\022\006\n\002FF\020\005\022\007\n\003FFF\020\006\"\235\003\n\007Segmen"
-  "t\022\014\n\004pBar\030\001 \001(\r\022\017\n\007pOffset\030\002 \001(\r\022 \n\004note"
-  "\030\003 \003(\0132\022.museprotocol.Note\022+\n\002cb\030\004 \001(\0162\037"
-  ".museprotocol.Segment.ChordBase\0221\n\005ctype"
-  "\030\005 \001(\0162\".museprotocol.Segment.ChordSubTy"
-  "pe\022\r\n\005speed\030\006 \001(\005\"\211\001\n\tChordBase\022\017\n\013NOT_C"
-  "HANGED\020\000\022\005\n\001A\020\001\022\n\n\006ASharp\020\002\022\005\n\001B\020\003\022\005\n\001C\020"
-  "\004\022\n\n\006CSharp\020\005\022\005\n\001D\020\006\022\n\n\006DSharp\020\007\022\005\n\001E\020\010\022"
-  "\005\n\001F\020\t\022\n\n\006FSharp\020\n\022\005\n\001G\020\013\022\n\n\006GSharp\020\014\"V\n"
-  "\014ChordSubType\022\t\n\005Major\020\000\022\t\n\005Minor\020\001\022\014\n\010D"
-  "ominant\020\002\022\016\n\nDiminished\020\003\022\022\n\016HalfDiminis"
-  "hed\020\004b\006proto3"
+  "\014\n\010Triangle\020\026\022\013\n\007Timpany\020\027\022\n\n\006Cymbal\020\030\"H"
+  "\n\006Volume\022\006\n\002MF\020\000\022\007\n\003PPP\020\001\022\006\n\002PP\020\002\022\005\n\001P\020\003"
+  "\022\006\n\002MP\020\004\022\005\n\001F\020\005\022\006\n\002FF\020\006\022\007\n\003FFF\020\007\"\250\004\n\007Seg"
+  "ment\022\014\n\004pBar\030\001 \001(\r\022\017\n\007pOffset\030\002 \001(\r\022 \n\004n"
+  "ote\030\003 \003(\0132\022.museprotocol.Note\022+\n\002cb\030\004 \001("
+  "\0162\037.museprotocol.Segment.ChordBase\0221\n\005ct"
+  "ype\030\005 \001(\0162\".museprotocol.Segment.ChordSu"
+  "bType\0225\n\tvolchange\030\006 \001(\0162\".museprotocol."
+  "Segment.VolumeChange\022\r\n\005speed\030\007 \001(\005\"\211\001\n\t"
+  "ChordBase\022\017\n\013NOT_CHANGED\020\000\022\005\n\001A\020\001\022\n\n\006ASh"
+  "arp\020\002\022\005\n\001B\020\003\022\005\n\001C\020\004\022\n\n\006CSharp\020\005\022\005\n\001D\020\006\022\n"
+  "\n\006DSharp\020\007\022\005\n\001E\020\010\022\005\n\001F\020\t\022\n\n\006FSharp\020\n\022\005\n\001"
+  "G\020\013\022\n\n\006GSharp\020\014\"V\n\014ChordSubType\022\t\n\005Major"
+  "\020\000\022\t\n\005Minor\020\001\022\014\n\010Dominant\020\002\022\016\n\nDiminishe"
+  "d\020\003\022\022\n\016HalfDiminished\020\004\"R\n\014VolumeChange\022"
+  "\010\n\004None\020\000\022\r\n\tCrescendo\020\001\022\022\n\016CrescendoLar"
+  "ge\020\002\022\007\n\003Dim\020\003\022\014\n\010DimLarge\020\004b\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_sequence_2eproto_deps[1] = {
 };
@@ -129,7 +133,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_seq
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_sequence_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_sequence_2eproto = {
-  false, false, descriptor_table_protodef_sequence_2eproto, "sequence.proto", 1093,
+  false, false, descriptor_table_protodef_sequence_2eproto, "sequence.proto", 1235,
   &descriptor_table_sequence_2eproto_once, descriptor_table_sequence_2eproto_sccs, descriptor_table_sequence_2eproto_deps, 2, 0,
   schemas, file_default_instances, TableStruct_sequence_2eproto::offsets,
   file_level_metadata_sequence_2eproto, 2, file_level_enum_descriptors_sequence_2eproto, file_level_service_descriptors_sequence_2eproto,
@@ -218,6 +222,7 @@ bool Note_Volume_IsValid(int value) {
     case 4:
     case 5:
     case 6:
+    case 7:
       return true;
     default:
       return false;
@@ -225,10 +230,11 @@ bool Note_Volume_IsValid(int value) {
 }
 
 #if (__cplusplus < 201703) && (!defined(_MSC_VER) || _MSC_VER >= 1900)
-constexpr Note_Volume Note::Neutral;
-constexpr Note_Volume Note::P;
-constexpr Note_Volume Note::PP;
+constexpr Note_Volume Note::MF;
 constexpr Note_Volume Note::PPP;
+constexpr Note_Volume Note::PP;
+constexpr Note_Volume Note::P;
+constexpr Note_Volume Note::MP;
 constexpr Note_Volume Note::F;
 constexpr Note_Volume Note::FF;
 constexpr Note_Volume Note::FFF;
@@ -305,6 +311,33 @@ constexpr Segment_ChordSubType Segment::HalfDiminished;
 constexpr Segment_ChordSubType Segment::ChordSubType_MIN;
 constexpr Segment_ChordSubType Segment::ChordSubType_MAX;
 constexpr int Segment::ChordSubType_ARRAYSIZE;
+#endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || _MSC_VER >= 1900)
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* Segment_VolumeChange_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_sequence_2eproto);
+  return file_level_enum_descriptors_sequence_2eproto[4];
+}
+bool Segment_VolumeChange_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+      return true;
+    default:
+      return false;
+  }
+}
+
+#if (__cplusplus < 201703) && (!defined(_MSC_VER) || _MSC_VER >= 1900)
+constexpr Segment_VolumeChange Segment::None;
+constexpr Segment_VolumeChange Segment::Crescendo;
+constexpr Segment_VolumeChange Segment::CrescendoLarge;
+constexpr Segment_VolumeChange Segment::Dim;
+constexpr Segment_VolumeChange Segment::DimLarge;
+constexpr Segment_VolumeChange Segment::VolumeChange_MIN;
+constexpr Segment_VolumeChange Segment::VolumeChange_MAX;
+constexpr int Segment::VolumeChange_ARRAYSIZE;
 #endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || _MSC_VER >= 1900)
 
 // ===================================================================
@@ -765,9 +798,17 @@ const char* Segment::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::in
           _internal_set_ctype(static_cast<::museprotocol::Segment_ChordSubType>(val));
         } else goto handle_unusual;
         continue;
-      // int32 speed = 6;
+      // .museprotocol.Segment.VolumeChange volchange = 6;
       case 6:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 48)) {
+          ::PROTOBUF_NAMESPACE_ID::uint64 val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_volchange(static_cast<::museprotocol::Segment_VolumeChange>(val));
+        } else goto handle_unusual;
+        continue;
+      // int32 speed = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 56)) {
           speed_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
@@ -834,10 +875,17 @@ failure:
       5, this->_internal_ctype(), target);
   }
 
-  // int32 speed = 6;
+  // .museprotocol.Segment.VolumeChange volchange = 6;
+  if (this->volchange() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteEnumToArray(
+      6, this->_internal_volchange(), target);
+  }
+
+  // int32 speed = 7;
   if (this->speed() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(6, this->_internal_speed(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(7, this->_internal_speed(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -889,7 +937,13 @@ size_t Segment::ByteSizeLong() const {
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_ctype());
   }
 
-  // int32 speed = 6;
+  // .museprotocol.Segment.VolumeChange volchange = 6;
+  if (this->volchange() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_volchange());
+  }
+
+  // int32 speed = 7;
   if (this->speed() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
@@ -939,6 +993,9 @@ void Segment::MergeFrom(const Segment& from) {
   }
   if (from.ctype() != 0) {
     _internal_set_ctype(from._internal_ctype());
+  }
+  if (from.volchange() != 0) {
+    _internal_set_volchange(from._internal_volchange());
   }
   if (from.speed() != 0) {
     _internal_set_speed(from._internal_speed());

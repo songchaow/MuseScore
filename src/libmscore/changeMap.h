@@ -66,6 +66,7 @@ public:
     bool operator!=(const ChangeEvent& event) const { return !(operator==(event)); }
 
     friend class ChangeMap;
+    ChangeEventType eventType() const { return type; }
 };
 
 //---------------------------------------------------------

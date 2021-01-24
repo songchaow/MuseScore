@@ -117,18 +117,19 @@ inline bool Note_Instrument_Parse(
     Note_Instrument_descriptor(), name, value);
 }
 enum Note_Volume : int {
-  Note_Volume_Neutral = 0,
-  Note_Volume_P = 1,
+  Note_Volume_MF = 0,
+  Note_Volume_PPP = 1,
   Note_Volume_PP = 2,
-  Note_Volume_PPP = 3,
-  Note_Volume_F = 4,
-  Note_Volume_FF = 5,
-  Note_Volume_FFF = 6,
+  Note_Volume_P = 3,
+  Note_Volume_MP = 4,
+  Note_Volume_F = 5,
+  Note_Volume_FF = 6,
+  Note_Volume_FFF = 7,
   Note_Volume_Note_Volume_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
   Note_Volume_Note_Volume_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
 };
 bool Note_Volume_IsValid(int value);
-constexpr Note_Volume Note_Volume_Volume_MIN = Note_Volume_Neutral;
+constexpr Note_Volume Note_Volume_Volume_MIN = Note_Volume_MF;
 constexpr Note_Volume Note_Volume_Volume_MAX = Note_Volume_FFF;
 constexpr int Note_Volume_Volume_ARRAYSIZE = Note_Volume_Volume_MAX + 1;
 
@@ -209,6 +210,34 @@ inline bool Segment_ChordSubType_Parse(
     ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, Segment_ChordSubType* value) {
   return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<Segment_ChordSubType>(
     Segment_ChordSubType_descriptor(), name, value);
+}
+enum Segment_VolumeChange : int {
+  Segment_VolumeChange_None = 0,
+  Segment_VolumeChange_Crescendo = 1,
+  Segment_VolumeChange_CrescendoLarge = 2,
+  Segment_VolumeChange_Dim = 3,
+  Segment_VolumeChange_DimLarge = 4,
+  Segment_VolumeChange_Segment_VolumeChange_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
+  Segment_VolumeChange_Segment_VolumeChange_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
+};
+bool Segment_VolumeChange_IsValid(int value);
+constexpr Segment_VolumeChange Segment_VolumeChange_VolumeChange_MIN = Segment_VolumeChange_None;
+constexpr Segment_VolumeChange Segment_VolumeChange_VolumeChange_MAX = Segment_VolumeChange_DimLarge;
+constexpr int Segment_VolumeChange_VolumeChange_ARRAYSIZE = Segment_VolumeChange_VolumeChange_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* Segment_VolumeChange_descriptor();
+template<typename T>
+inline const std::string& Segment_VolumeChange_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, Segment_VolumeChange>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function Segment_VolumeChange_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    Segment_VolumeChange_descriptor(), enum_t_value);
+}
+inline bool Segment_VolumeChange_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, Segment_VolumeChange* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<Segment_VolumeChange>(
+    Segment_VolumeChange_descriptor(), name, value);
 }
 // ===================================================================
 
@@ -398,14 +427,16 @@ class Note PROTOBUF_FINAL :
   }
 
   typedef Note_Volume Volume;
-  static constexpr Volume Neutral =
-    Note_Volume_Neutral;
-  static constexpr Volume P =
-    Note_Volume_P;
-  static constexpr Volume PP =
-    Note_Volume_PP;
+  static constexpr Volume MF =
+    Note_Volume_MF;
   static constexpr Volume PPP =
     Note_Volume_PPP;
+  static constexpr Volume PP =
+    Note_Volume_PP;
+  static constexpr Volume P =
+    Note_Volume_P;
+  static constexpr Volume MP =
+    Note_Volume_MP;
   static constexpr Volume F =
     Note_Volume_F;
   static constexpr Volume FF =
@@ -727,6 +758,42 @@ class Segment PROTOBUF_FINAL :
     return Segment_ChordSubType_Parse(name, value);
   }
 
+  typedef Segment_VolumeChange VolumeChange;
+  static constexpr VolumeChange None =
+    Segment_VolumeChange_None;
+  static constexpr VolumeChange Crescendo =
+    Segment_VolumeChange_Crescendo;
+  static constexpr VolumeChange CrescendoLarge =
+    Segment_VolumeChange_CrescendoLarge;
+  static constexpr VolumeChange Dim =
+    Segment_VolumeChange_Dim;
+  static constexpr VolumeChange DimLarge =
+    Segment_VolumeChange_DimLarge;
+  static inline bool VolumeChange_IsValid(int value) {
+    return Segment_VolumeChange_IsValid(value);
+  }
+  static constexpr VolumeChange VolumeChange_MIN =
+    Segment_VolumeChange_VolumeChange_MIN;
+  static constexpr VolumeChange VolumeChange_MAX =
+    Segment_VolumeChange_VolumeChange_MAX;
+  static constexpr int VolumeChange_ARRAYSIZE =
+    Segment_VolumeChange_VolumeChange_ARRAYSIZE;
+  static inline const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor*
+  VolumeChange_descriptor() {
+    return Segment_VolumeChange_descriptor();
+  }
+  template<typename T>
+  static inline const std::string& VolumeChange_Name(T enum_t_value) {
+    static_assert(::std::is_same<T, VolumeChange>::value ||
+      ::std::is_integral<T>::value,
+      "Incorrect type passed to function VolumeChange_Name.");
+    return Segment_VolumeChange_Name(enum_t_value);
+  }
+  static inline bool VolumeChange_Parse(::PROTOBUF_NAMESPACE_ID::ConstStringParam name,
+      VolumeChange* value) {
+    return Segment_VolumeChange_Parse(name, value);
+  }
+
   // accessors -------------------------------------------------------
 
   enum : int {
@@ -735,7 +802,8 @@ class Segment PROTOBUF_FINAL :
     kPOffsetFieldNumber = 2,
     kCbFieldNumber = 4,
     kCtypeFieldNumber = 5,
-    kSpeedFieldNumber = 6,
+    kVolchangeFieldNumber = 6,
+    kSpeedFieldNumber = 7,
   };
   // repeated .museprotocol.Note note = 3;
   int note_size() const;
@@ -791,7 +859,16 @@ class Segment PROTOBUF_FINAL :
   void _internal_set_ctype(::museprotocol::Segment_ChordSubType value);
   public:
 
-  // int32 speed = 6;
+  // .museprotocol.Segment.VolumeChange volchange = 6;
+  void clear_volchange();
+  ::museprotocol::Segment_VolumeChange volchange() const;
+  void set_volchange(::museprotocol::Segment_VolumeChange value);
+  private:
+  ::museprotocol::Segment_VolumeChange _internal_volchange() const;
+  void _internal_set_volchange(::museprotocol::Segment_VolumeChange value);
+  public:
+
+  // int32 speed = 7;
   void clear_speed();
   ::PROTOBUF_NAMESPACE_ID::int32 speed() const;
   void set_speed(::PROTOBUF_NAMESPACE_ID::int32 value);
@@ -812,6 +889,7 @@ class Segment PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::uint32 poffset_;
   int cb_;
   int ctype_;
+  int volchange_;
   ::PROTOBUF_NAMESPACE_ID::int32 speed_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_sequence_2eproto;
@@ -1090,7 +1168,27 @@ inline void Segment::set_ctype(::museprotocol::Segment_ChordSubType value) {
   // @@protoc_insertion_point(field_set:museprotocol.Segment.ctype)
 }
 
-// int32 speed = 6;
+// .museprotocol.Segment.VolumeChange volchange = 6;
+inline void Segment::clear_volchange() {
+  volchange_ = 0;
+}
+inline ::museprotocol::Segment_VolumeChange Segment::_internal_volchange() const {
+  return static_cast< ::museprotocol::Segment_VolumeChange >(volchange_);
+}
+inline ::museprotocol::Segment_VolumeChange Segment::volchange() const {
+  // @@protoc_insertion_point(field_get:museprotocol.Segment.volchange)
+  return _internal_volchange();
+}
+inline void Segment::_internal_set_volchange(::museprotocol::Segment_VolumeChange value) {
+  
+  volchange_ = value;
+}
+inline void Segment::set_volchange(::museprotocol::Segment_VolumeChange value) {
+  _internal_set_volchange(value);
+  // @@protoc_insertion_point(field_set:museprotocol.Segment.volchange)
+}
+
+// int32 speed = 7;
 inline void Segment::clear_speed() {
   speed_ = 0;
 }
@@ -1141,6 +1239,11 @@ template <> struct is_proto_enum< ::museprotocol::Segment_ChordSubType> : ::std:
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::museprotocol::Segment_ChordSubType>() {
   return ::museprotocol::Segment_ChordSubType_descriptor();
+}
+template <> struct is_proto_enum< ::museprotocol::Segment_VolumeChange> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::museprotocol::Segment_VolumeChange>() {
+  return ::museprotocol::Segment_VolumeChange_descriptor();
 }
 
 PROTOBUF_NAMESPACE_CLOSE
