@@ -1,10 +1,25 @@
 set(EXECUTABLE_NAME extractscore)
 set(EXECUTABLE_SRC main.cpp)
-set(SERIALIZE_SRC sequence.pb.cc)
-# set(SERIALIZE_HEADER sequence.pb.h)
-set(PROTOBUF_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/protobuf/src)
 
-add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SRC} ${SERIALIZE_SRC})
+# protobuf generation
+set(PROTOBUF_OUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+file(GLOB PROTOBUF_DEFINITION_FILES "*.proto")
+foreach(file ${PROTOBUF_DEFINITION_FILES})
+    set(PROTOBUF_CMD "protoc" "--proto_path=${CMAKE_CURRENT_LIST_DIR}" "--cpp_out=${PROTOBUF_OUT_DIRECTORY}" "${file}")
+    execute_process(COMMAND ${PROTOBUF_CMD}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+            RESULT_VARIABLE PROTOBUF_RESULT
+            OUTPUT_VARIABLE PROTOBUF_OUTPUT_VARIABLE
+            ERROR_VARIABLE PROTOBUF_ERR_VARIABLE)
+endforeach()
+file(GLOB PROTOBUF_MODELS_INCLUDES ${PROTOBUF_OUT_DIRECTORY}/*.pb.cc ${PROTOBUF_OUT_DIRECTORY}/*.pb.h)
+
+
+# set(PROTOBUF_MODELS_INCLUDES sequence.pb.cc)
+# set(SERIALIZE_HEADER sequence.pb.h)
+set(PROTOBUF_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/protobuf/src ${PROTOBUF_OUT_DIRECTORY})
+
+add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SRC} ${PROTOBUF_MODELS_INCLUDES})
 target_link_libraries(${EXECUTABLE_NAME}
     libmscore
     notation
@@ -34,6 +49,8 @@ target_include_directories(${EXECUTABLE_NAME} PUBLIC
     ${PROJECT_SOURCE_DIR}/src/framework/global
     ${PROTOBUF_INCLUDE_DIR}
     )
+
+
 
 if (OS_IS_WIN)
     install(TARGETS ${EXECUTABLE_NAME} RUNTIME DESTINATION bin )
