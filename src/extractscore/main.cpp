@@ -6,6 +6,7 @@
 #include "libmscore/trill.h"
 #include "libmscore/tie.h"
 #include "framework/fonts/fontsmodule.h"
+#include "framework/midi_old/exportmidi.h"
 #include "utils.h"
 
 #include "sequence.pb.h"
@@ -213,55 +214,12 @@ bool findRamp(const ChangeMap& velocities, Fraction tick, ChangeEvent& ramp) {
 }
 
 
-int main(int argc, char* argv[]) {
-    // parse args (3 args)
-    if (argc < 3) {
-        std::cerr << "Too few arguments provided." << std::endl;
-        return 1;
-    }
-    if (argc >= 4)
-        std::cout << "Warning: too many arguments." << std::endl;
-    std::string score_dir_path = argv[1];
-    std::string output_path = argv[2];
-    if (output_path.back() == '/' || output_path.back() == '\\')
-        output_path.pop_back();
-    if (output_path.empty())
-        output_path.push_back('.');
-    if (!fs::exists(output_path))
-        fs::create_directories(output_path);
-
-    /*mu::notation::MasterNotation notation;
-    notation.load(score_path);*/
-    MScore::testMode = true;
-    MScore::noGui = true;
-    QApplication app(argc, argv);
-
-    auto mscoreGlobal = Ms::MScore();
-    new MuseScoreCore;
-    // fonts
-    //mu::fonts::init_fonts_qrc();
-    mu::fonts::FontsModule fontmodule;
-    fontmodule.registerResources();
-
-    MScore::init();
-    
-    constexpr int buff_len = 1024 * 1024 * 50;
-    std::vector<char> buffer(buff_len);
-
-    for (const auto& p : fs::directory_iterator(score_dir_path)) {
-        std::string score_path = p.path().generic_string();
-        std::shared_ptr<MasterScore> currscore = std::make_shared<MasterScore>(mscoreGlobal.baseStyle());
-        mu::notation::MsczNotationReader reader;
-        reader.read(currscore.get(), score_path);
-        currscore->updateVelo();
-        std::string filenameBase = filenamefromString(score_path);
-
-        // iterate segments
+void extractSegments(Ms::Score* currscore, museprotocol::Score& score) {
+    // iterate segments
         Ms::Measure* m = currscore->firstMeasure();
         Fraction currTimeSig; // same for at least one measure
         int measureIdx = 0;
 
-        museprotocol::Score score;
 
         while (m) {
             measureIdx++;
@@ -297,7 +255,7 @@ int main(int argc, char* argv[]) {
                             }
                             // instrument
                             Instrument* instr = chord->part()->instrument(chord->tick());
-                            QString instrID = instr->instrumentId();
+                            //QString instrID = instr->instrumentId();
 
                             // trill
                             Trill* tr = findFirstTrill(chord);
@@ -368,6 +326,106 @@ int main(int argc, char* argv[]) {
             m = m->nextMeasure();
 
         }
+}
+
+void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
+    Ms::Measure* m = currscore->firstMeasure();
+    Fraction currTimeSig; // same for at least one measure
+    int measureIdx = 0;
+    std::vector<museprotocol::Track*> track_ptrs;
+    
+    while (m) {
+        measureIdx++;
+        Ms::Segment* s = m->first(SegmentType::TimeSig);
+        if (s) {
+            // Time Signature, not necessarily used. Record at most one signature here
+            TimeSig* timesig = static_cast<TimeSig*>(s->element(0));
+            currTimeSig = timesig->sig();
+        }
+
+        // ChordRest segments
+        s = m->first(SegmentType::All);
+        const std::set<SegmentType> exclude = {};
+        while (s) {
+            // only ChordRest?
+            if (s->segmentType() == SegmentType::ChordRest) {
+                const std::vector<Element*>& elements = s->elist();
+                // initialize
+                if (track_ptrs.empty()) {
+                    for (int i = 0; i < elements.size() / VOICES; i++)
+                        track_ptrs.push_back(score.add_tracks());
+                }
+                // add notes
+                for (int i = 0; i < elements.size(); i++) {
+                    int trackIdx = i / VOICES;
+                    auto e = elements[i];
+                    if (e && e->isChord()) {
+                        Ms::Chord* chord = static_cast<Ms::Chord*>(e);
+                        
+                    }
+                }
+            }
+            s = s->next();
+        }
+        m = m->nextMeasure();
+    }
+}
+
+int main(int argc, char* argv[]) {
+    // parse args (3 args)
+    if (argc < 3) {
+        std::cerr << "Too few arguments provided." << std::endl;
+        return 1;
+    }
+    if (argc >= 4)
+        std::cout << "Warning: too many arguments." << std::endl;
+    std::string score_dir_path = argv[1];
+    std::string output_path = argv[2];
+    if (output_path.back() == '/' || output_path.back() == '\\')
+        output_path.pop_back();
+    if (output_path.empty())
+        output_path.push_back('.');
+    if (!fs::exists(output_path))
+        fs::create_directories(output_path);
+    std::string midi_path = output_path+"/midi";
+    if (!fs::exists(midi_path))
+        fs::create_directories(midi_path);
+
+    /*mu::notation::MasterNotation notation;
+    notation.load(score_path);*/
+    MScore::testMode = true;
+    MScore::noGui = true;
+    QApplication app(argc, argv);
+
+    auto mscoreGlobal = Ms::MScore();
+    new MuseScoreCore;
+    // fonts
+    //mu::fonts::init_fonts_qrc();
+    mu::fonts::FontsModule fontmodule;
+    fontmodule.registerResources();
+
+    MScore::init();
+    
+    constexpr int buff_len = 1024 * 1024 * 50;
+    std::vector<char> buffer(buff_len);
+
+    for (const auto& p : fs::directory_iterator(score_dir_path)) {
+        std::string score_path = p.path().generic_string();
+        std::shared_ptr<MasterScore> currscore = std::make_shared<MasterScore>(mscoreGlobal.baseStyle());
+        mu::notation::MsczNotationReader reader;
+        reader.read(currscore.get(), score_path);
+        currscore->updateVelo();
+        std::string filenameBase = filenamefromString(score_path);
+
+        // output midi
+        ExportMidi midif(currscore.get());
+        
+        midif.write(QString::fromStdString(midi_path + '/' + filenameBase + ".mid"), true, true);
+
+        museprotocol::Score score;
+
+
+        
         int bytesize = score.ByteSizeLong();
         score.SerializeToArray(buffer.data(), bytesize);
         std::ofstream f(output_path + '/' + filenameBase + ".bin", std::ios::binary);
