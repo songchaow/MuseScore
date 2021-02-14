@@ -1,5 +1,5 @@
-set(EXECUTABLE_NAME extractscore)
-set(EXECUTABLE_SRC main.cpp)
+set(EXTRACT_EXE_NAME extractscore)
+set(EXTRACT_EXE_SRC main.cpp)
 
 # protobuf generation
 set(PROTOBUF_OUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
@@ -19,8 +19,7 @@ file(GLOB PROTOBUF_MODELS_INCLUDES ${PROTOBUF_OUT_DIRECTORY}/*.pb.cc ${PROTOBUF_
 # set(SERIALIZE_HEADER sequence.pb.h)
 set(PROTOBUF_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/protobuf/src ${PROTOBUF_OUT_DIRECTORY})
 
-add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SRC} ${PROTOBUF_MODELS_INCLUDES})
-target_link_libraries(${EXECUTABLE_NAME}
+set(REF_LIBS
     libmscore
     notation
     actions
@@ -42,18 +41,19 @@ target_link_libraries(${EXECUTABLE_NAME}
     fonts
     libprotobuf
     )
-target_include_directories(${EXECUTABLE_NAME} PUBLIC 
+set(INCLUDES
     ${PROJECT_SOURCE_DIR}/src/libmscore
     ${PROJECT_SOURCE_DIR}/src/notation
     ${PROJECT_SOURCE_DIR}/src/framework
     ${PROJECT_SOURCE_DIR}/src/framework/global
     ${PROTOBUF_INCLUDE_DIR}
-    )
+)
 
-
-
+add_executable(${EXTRACT_EXE_NAME} ${EXTRACT_EXE_SRC} ${PROTOBUF_MODELS_INCLUDES})
+target_link_libraries(${EXTRACT_EXE_NAME} ${REF_LIBS})
+target_include_directories(${EXTRACT_EXE_NAME} PUBLIC ${INCLUDES})
 if (OS_IS_WIN)
-    install(TARGETS ${EXECUTABLE_NAME} RUNTIME DESTINATION bin )
+    install(TARGETS ${EXTRACT_EXE_NAME} RUNTIME DESTINATION bin )
 endif (OS_IS_WIN)
 
 if(MSVC)
@@ -64,12 +64,12 @@ if(MSVC)
    # Set the debugging properties for the "mscore" project.
    file(TO_NATIVE_PATH "${CMAKE_INSTALL_PREFIX}/bin" VS_DEBUGGER_WORKING_DIRECTORY)
    if (NOT ${CMAKE_VERSION} VERSION_LESS "3.12.0")
-      set_target_properties(${EXECUTABLE_NAME} PROPERTIES VS_DEBUGGER_COMMAND "${VS_DEBUGGER_WORKING_DIRECTORY}\\${EXECUTABLE_NAME}${CMAKE_EXECUTABLE_SUFFIX}")
+      set_target_properties(${EXTRACT_EXE_NAME} PROPERTIES VS_DEBUGGER_COMMAND "${VS_DEBUGGER_WORKING_DIRECTORY}\\${EXTRACT_EXE_NAME}${CMAKE_EXECUTABLE_SUFFIX}")
    endif ()
    if (NOT ${CMAKE_VERSION} VERSION_LESS "3.8.0")
-      set_target_properties(${EXECUTABLE_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${VS_DEBUGGER_WORKING_DIRECTORY}")
+      set_target_properties(${EXTRACT_EXE_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${VS_DEBUGGER_WORKING_DIRECTORY}")
    endif ()
    if (NOT ${CMAKE_VERSION} VERSION_LESS "3.13.0")
-      set_target_properties(${EXECUTABLE_NAME} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "--debug")
+      set_target_properties(${EXTRACT_EXE_NAME} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "--debug")
    endif ()
 endif(MSVC)

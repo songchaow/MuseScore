@@ -6,6 +6,7 @@
 #include "libmscore/trill.h"
 #include "libmscore/tie.h"
 #include "framework/fonts/fontsmodule.h"
+#include "utils.h"
 
 #include "sequence.pb.h"
 #include "aixlog.hpp"
@@ -15,31 +16,14 @@
 #include <set>
 #include <map>
 #include <unordered_map>
+#include <fstream>
+#include <filesystem>
 
 #include <QDebug>
 
 using namespace Ms;
+namespace fs = std::filesystem;
 
-// unimplemented
-std::map<std::string, std::string> paresArgs(int argc, char* argv[]) {
-    std::map<std::string, std::string> ret;
-    if (argc < 2)
-        return std::map<std::string, std::string>();
-    std::string last_option;
-    bool positional = true;
-
-    for (int i = 1; i <= argc - 1; i++) {
-        std::string s(argv[i]);
-        if (s.size() > 0 && s[0] == '-')
-            last_option = s;
-        else if (s.size() > 0) {
-            if (!last_option.empty()) {
-                ret[last_option] = s;
-                last_option.clear();
-            }
-        }
-    }
-}
 
 Trill* findFirstTrill(Ms::Chord* chord)
 {
@@ -148,6 +132,7 @@ void fillInstrumentField(Note* n, Instrument* src, museprotocol::Note* note) {
     QString instrID = src->instrumentId();
     if (instrID.isEmpty()) {
         std::cout << "Empty Instrument ID" << std::endl;
+        note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Unknown);
         return;
     }
     auto res = infoMap.find(instrID.toStdString());
@@ -168,7 +153,7 @@ void fillInstrumentField(Note* n, Instrument* src, museprotocol::Note* note) {
     }
 
     if (res == infoMap.end()) {
-        std::cout << "Instrument" << instrID.toStdString() << "not found.";
+        std::cout << "Instrument " << instrID.toStdString() << " not found." << std::endl;
         return;
     }
     
@@ -229,14 +214,21 @@ bool findRamp(const ChangeMap& velocities, Fraction tick, ChangeEvent& ramp) {
 
 
 int main(int argc, char* argv[]) {
-    // parse args
-    if (argc < 2) {
-        std::cerr << "No score path provided." << std::endl;
+    // parse args (3 args)
+    if (argc < 3) {
+        std::cerr << "Too few arguments provided." << std::endl;
         return 1;
     }
-    if (argc >= 3)
+    if (argc >= 4)
         std::cout << "Warning: too many arguments." << std::endl;
-    std::string score_path = argv[1];
+    std::string score_dir_path = argv[1];
+    std::string output_path = argv[2];
+    if (output_path.back() == '/' || output_path.back() == '\\')
+        output_path.pop_back();
+    if (output_path.empty())
+        output_path.push_back('.');
+    if (!fs::exists(output_path))
+        fs::create_directories(output_path);
 
     /*mu::notation::MasterNotation notation;
     notation.load(score_path);*/
@@ -252,117 +244,137 @@ int main(int argc, char* argv[]) {
     fontmodule.registerResources();
 
     MScore::init();
-    // another way
-    std::shared_ptr<MasterScore> currscore = std::make_shared<MasterScore>(mscoreGlobal.baseStyle());
-    mu::notation::MsczNotationReader reader;
-    reader.read(currscore.get(), score_path);
-    currscore->updateVelo();
+    
+    constexpr int buff_len = 1024 * 1024 * 50;
+    std::vector<char> buffer(buff_len);
 
-    // iterate segments
-    Ms::Measure* m = currscore->firstMeasure();
-    Fraction currTimeSig; // same for at least one measure
-    int measureIdx = 0;
-    while (m) {
-        measureIdx++;
-        Ms::Segment* s = m->first(SegmentType::TimeSig);
-        if (s) {
-            // Time Signature, not necessarily used. Record at most one signature here
-            TimeSig* timesig = static_cast<TimeSig*>(s->element(0));
-            currTimeSig = timesig->sig();
-        }
-        
-        // ChordRest segments
-        s = m->first(SegmentType::All);
-        const std::set<SegmentType> exclude = {};
-        while (s) {
-            // only ChordRest?
-            if (s->segmentType() == SegmentType::ChordRest) {
-                museprotocol::Segment currSegment;
-                museprotocol::Segment_VolumeChange volumeChange_seg;
-                const std::vector<Element*>& elements = s->elist();
-                currSegment.set_pbar(measureIdx);
-                Fraction offsetBar = s->rtick() * currTimeSig.numerator() * 32 / currTimeSig.denominator();
-                int offsetBarInt = offsetBar.numerator() / offsetBar.denominator();
-                currSegment.set_poffset(offsetBarInt);
-                for (int i = 0; i < elements.size(); i++) {
-                    auto e = elements[i];
-                    ChordRest* cr = static_cast<ChordRest*>(e);
-                    if (cr && cr->isChord()) {
-                        Ms::Chord* chord = static_cast<Ms::Chord*>(cr);
-                        if (chord->crossMeasure() == CrossMeasure::SECOND) {
-                            // already counted in FIRST
-                            continue;
-                        }
-                        // instrument
-                        Instrument* instr = chord->part()->instrument(chord->tick());
-                        QString instrID = instr->instrumentId();
+    for (const auto& p : fs::directory_iterator(score_dir_path)) {
+        std::string score_path = p.path().generic_string();
+        std::shared_ptr<MasterScore> currscore = std::make_shared<MasterScore>(mscoreGlobal.baseStyle());
+        mu::notation::MsczNotationReader reader;
+        reader.read(currscore.get(), score_path);
+        currscore->updateVelo();
+        std::string filenameBase = filenamefromString(score_path);
 
-                        // trill
-                        Trill* tr = findFirstTrill(chord);
-                        if (tr) {
-                            // is lasting
-                            ;
-                        }
-                        // volume (same for all notes in a chord)
-                        int tickpos = chord->tick().ticks();
-                        int chordTickLen = chord->actualTicks().ticks();
-                        int ondelayticks = chordTickLen * chord->notes()[0]->playEvents()[0].ontime() / 1000; // delay of the NoteEvent from the chord starting tick
-                        ChangeMap& veloEvents = chord->staff()->velocities();
-                        ChangeMap& veloMulEvents = chord->staff()->velocityMultiplications();
-                        int volume = chord->staff()->velocities().val(Fraction::fromTicks(tickpos + ondelayticks));
-                        museprotocol::Note_Volume vol_enum = nearestVolumeEnum(volume);
-                        // volume change for segment
-                        museprotocol::Segment_VolumeChange currrVolChange = calcVolumeChange(chord);
-                        if (currrVolChange != museprotocol::Segment_VolumeChange_None)
-                        {
-                            if (i >= 1 && currrVolChange != volumeChange_seg)
-                                std::cout << "Inconsistent Volume Change among different tracks." << std::endl;
-                            volumeChange_seg = currrVolChange;
-                        }
+        // iterate segments
+        Ms::Measure* m = currscore->firstMeasure();
+        Fraction currTimeSig; // same for at least one measure
+        int measureIdx = 0;
 
-                        for (Ms::Note* n : chord->notes()) {
-                            museprotocol::Note* noteprotobuf = currSegment.add_note();
-                            // duration
-                            Fraction duration = chord->durationType().fraction();
-                            // if it's tied to previous notes, skip it
-                            if (n->tieBack())
-                                continue;
-                            if (n->tieFor()) {
-                                // find all after notes and sum the duration
+        museprotocol::Score score;
 
-                                Note* currNote = n;
-                                while (currNote->tieFor()) {
-                                    Note* nextNote = static_cast<Note*>(currNote->tieFor()->endElement());
-                                    assert(nextNote->pitch() == n->pitch());
-                                    // add nextNote's duration
-                                    if (!nextNote)
-                                        break;
-                                    duration += nextNote->chord()->durationType().fraction();
-                                    currNote = nextNote;
-                                }
-                            }
-                            
-                            noteprotobuf->set_duration(duration.ticks());
-                            noteprotobuf->set_pitch(n->pitch()); // 0-127
-                            noteprotobuf->set_vol(vol_enum);
-                            // Instrument
-                            fillInstrumentField(n, instr, noteprotobuf);
-                            
-                        }
-                    }
-                }
-                currSegment.set_volchange(volumeChange_seg);
-                
+        while (m) {
+            measureIdx++;
+            Ms::Segment* s = m->first(SegmentType::TimeSig);
+            if (s) {
+                // Time Signature, not necessarily used. Record at most one signature here
+                TimeSig* timesig = static_cast<TimeSig*>(s->element(0));
+                currTimeSig = timesig->sig();
             }
 
-            // exclude 
-            s = s->next();
+            // ChordRest segments
+            s = m->first(SegmentType::All);
+            const std::set<SegmentType> exclude = {};
+            while (s) {
+                // only ChordRest?
+                if (s->segmentType() == SegmentType::ChordRest) {
+                    museprotocol::Segment* currSegment = score.add_segs();
+                    //museprotocol::Segment currSegment;
+                    museprotocol::Segment_VolumeChange volumeChange_seg = museprotocol::Segment_VolumeChange_None;
+                    const std::vector<Element*>& elements = s->elist();
+                    currSegment->set_pbar(measureIdx);
+                    Fraction offsetBar = s->rtick() * currTimeSig.numerator() * 32 / currTimeSig.denominator();
+                    int offsetBarInt = offsetBar.numerator() / offsetBar.denominator();
+                    currSegment->set_poffset(offsetBarInt);
+                    for (int i = 0; i < elements.size(); i++) {
+                        auto e = elements[i];
+                        ChordRest* cr = static_cast<ChordRest*>(e);
+                        if (cr && cr->isChord()) {
+                            Ms::Chord* chord = static_cast<Ms::Chord*>(cr);
+                            if (chord->crossMeasure() == CrossMeasure::SECOND) {
+                                // already counted in FIRST
+                                continue;
+                            }
+                            // instrument
+                            Instrument* instr = chord->part()->instrument(chord->tick());
+                            QString instrID = instr->instrumentId();
+
+                            // trill
+                            Trill* tr = findFirstTrill(chord);
+                            if (tr) {
+                                // is lasting
+                                ;
+                            }
+                            // volume (same for all notes in a chord)
+                            int tickpos = chord->tick().ticks();
+                            int chordTickLen = chord->actualTicks().ticks();
+                            int ondelayticks = chordTickLen * chord->notes()[0]->playEvents()[0].ontime() / 1000; // delay of the NoteEvent from the chord starting tick
+                            ChangeMap& veloEvents = chord->staff()->velocities();
+                            ChangeMap& veloMulEvents = chord->staff()->velocityMultiplications();
+                            int volume = chord->staff()->velocities().val(Fraction::fromTicks(tickpos + ondelayticks));
+                            museprotocol::Note_Volume vol_enum = nearestVolumeEnum(volume);
+                            // volume change for segment
+                            museprotocol::Segment_VolumeChange currrVolChange = calcVolumeChange(chord);
+                            if (currrVolChange != museprotocol::Segment_VolumeChange_None)
+                            {
+                                if (i >= 1 && currrVolChange != volumeChange_seg)
+                                    std::cout << "Inconsistent Volume Change among different tracks." << std::endl;
+                                volumeChange_seg = currrVolChange;
+                            }
+
+                            for (Ms::Note* n : chord->notes()) {
+                                museprotocol::Note* noteprotobuf = currSegment->add_note();
+                                // duration
+                                Fraction duration = chord->durationType().fraction();
+                                // if it's tied to previous notes, skip it
+                                if (n->tieBack())
+                                    continue;
+                                if (n->tieFor()) {
+                                    // find all after notes and sum the duration
+
+                                    Note* currNote = n;
+                                    while (currNote->tieFor()) {
+                                        Note* nextNote = static_cast<Note*>(currNote->tieFor()->endElement());
+                                        assert(nextNote->pitch() == n->pitch());
+                                        // add nextNote's duration
+                                        if (!nextNote)
+                                            break;
+                                        duration += nextNote->chord()->durationType().fraction();
+                                        currNote = nextNote;
+                                    }
+                                }
+
+                                noteprotobuf->set_duration(duration.ticks());
+                                noteprotobuf->set_pitch(n->pitch()); // 0-127
+                                noteprotobuf->set_vol(vol_enum);
+                                // Instrument
+                                fillInstrumentField(n, instr, noteprotobuf);
+
+                            }
+                        }
+                    }
+                    currSegment->set_volchange(volumeChange_seg);
+
+                }
+
+                // exclude 
+                s = s->next();
+
+
+
+            }
+
+
+            m = m->nextMeasure();
+
         }
-
-
-        m = m->nextMeasure();
+        int bytesize = score.ByteSizeLong();
+        score.SerializeToArray(buffer.data(), bytesize);
+        std::ofstream f(output_path + '/' + filenameBase + ".bin", std::ios::binary);
+        f.write(buffer.data(), bytesize);
     }
 
+    
     
 
 

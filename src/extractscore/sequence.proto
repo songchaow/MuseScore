@@ -37,7 +37,7 @@ message Note {
         Triangle = 22;      //三角铁
         Timpany = 23;       //定音鼓
         Cymbal = 24;        //镲
-
+        Unknown = 25;
     }
     Instrument instrument = 3;
     enum Volume {
@@ -55,6 +55,18 @@ message Note {
     bool pizz = 7; // for strings DISCARDED
     bool tr = 8;
     bool tr_last = 9;
+}
+
+message MelodyNote {
+    uint32 pitch = 1;
+    uint32 duration = 2;
+    uint32 pBar = 3;
+    uint32 pOffset = 4;
+}
+
+message TrackNote {
+    uint32 pitch = 1;
+    
 }
 
 message Segment {
@@ -95,4 +107,8 @@ message Segment {
     ChordSubType ctype = 5;
     VolumeChange volchange = 6;
     int32 speed = 7;
+}
+
+message Score {
+    repeated Segment segs = 1;
 }
