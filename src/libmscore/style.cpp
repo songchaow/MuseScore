@@ -2529,7 +2529,7 @@ const TextStyle* textStyle(const char* name)
 
 const TextStyle* textStyle(Tid idx)
 {
-    Q_ASSERT(idx == textStyles[int(idx)].tid);
+    //Q_ASSERT(idx == textStyles[int(idx)].tid);
     return textStyles[int(idx)].ts;
 }
 
