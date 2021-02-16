@@ -85,7 +85,7 @@ void FileStatusRecord::readVersionMap() {
 }
 
 void FileStatusRecord::writeVersionMap() {
-    std::string record_path = dir + record_name;
+    std::string record_path = dir + '\\' + record_name;
     std::ofstream metaFile(record_path);
     metaFile << curr_ver << std::endl;
     for (auto i : version_map) {

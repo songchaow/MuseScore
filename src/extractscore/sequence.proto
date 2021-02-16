@@ -135,7 +135,8 @@ message Track {
         Unknown = 25;
     }
     Instrument instrument = 1;
-    repeated TrackNote notes = 2;
+    string instrumentName = 2;
+    repeated TrackNote notes = 3;
 }
 
 message Segment {

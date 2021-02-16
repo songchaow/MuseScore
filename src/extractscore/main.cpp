@@ -187,6 +187,8 @@ void fillInstrumentField(Instrument* src, museprotocol::Track* track) {
     }
     // fill from instrID
     matchInstrumentfromID(instrID.toStdString(), track);
+    // fill instrID string
+    track->set_instrumentname(instrID.toStdString());
 }
 
 void fillInstrumentField(Instrument* src, museprotocol::Note* note) {
@@ -542,16 +544,26 @@ int main(int argc, char* argv[]) {
             continue;
         }
         currscore->updateVelo();
+        currscore->doLayout();
         std::string filenameBase = filenamefromString(score_path);
 
         // output midi
         ExportMidi midif(currscore.get());
-        
-        midif.write(QString::fromStdString(midi_path + '/' + filenameBase + ".mid"), true, true);
-
+        try {
+            midif.write(QString::fromStdString(midi_path + '/' + filenameBase + ".mid"), true, true);
+        }
+        catch (std::exception err) {
+            std::cout << "Write MIDI failed. Msg:" + std::string(err.what()) << std::endl;
+            // log error. just append for now
+        }
         museprotocol::Score score;
-
-        extractTracks(currscore.get(), score);
+        try {
+            extractTracks(currscore.get(), score);
+        }
+        catch (std::exception err) {
+            std::cout << "Extract score failed. Msg:" + std::string(err.what()) << std::endl;
+            continue;
+        }
         
         int bytesize = score.ByteSizeLong();
         score.SerializeToArray(buffer.data(), bytesize);
@@ -559,6 +571,7 @@ int main(int argc, char* argv[]) {
         f.write(buffer.data(), bytesize);
 
         p.second = binrecord.currVersion();
+        binrecord.writeVersionMap();
     }
 
     

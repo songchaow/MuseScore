@@ -52,7 +52,6 @@ private:
     std::unordered_map<std::string, int> version_map;
     std::unordered_map<std::string, int>::iterator begin_it;
     void buildVersionMap(std::string dir);
-    void writeVersionMap();
     void readVersionMap();
 public:
     static constexpr auto record_name = "meta.txt";
@@ -62,4 +61,5 @@ public:
     void newVersion() { curr_ver++; begin_it = version_map.begin();}
     FileStatusRecordIt begin() { return  FileStatusRecordIt(begin_it, version_map.end(), curr_ver); }
     FileStatusRecordIt end() { return  FileStatusRecordIt(version_map.end(), version_map.end(), curr_ver); }
+    void writeVersionMap();
 };
