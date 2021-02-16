@@ -303,7 +303,7 @@ void Dynamic::read(XmlReader& e)
 
 void Dynamic::layout()
 {
-    TextBase::layout();
+    //TextBase::layout();
 
     Segment* s = segment();
     if (s) {
@@ -565,9 +565,10 @@ bool Dynamic::setProperty(Pid propertyId, const QVariant& v)
         _velChangeSpeed = Speed(v.toInt());
         break;
     default:
-        if (!TextBase::setProperty(propertyId, v)) {
+        // no gui, so text property can be ignored
+        /*if (!TextBase::setProperty(propertyId, v)) {
             return false;
-        }
+        }*/
         break;
     }
     triggerLayout();

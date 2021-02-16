@@ -1966,6 +1966,7 @@ void TextBase::createLayout()
 
 void TextBase::layout()
 {
+    return;
     setPos(QPointF());
     if (!parent()) {
         setOffset(0.0, 0.0);
@@ -2151,19 +2152,19 @@ qreal TextBase::size() const
 
 void TextBase::setFontStyle(const FontStyle& val)
 {
-    _cursor->setFormat(FormatId::Bold, val & FontStyle::Bold);
+    /*_cursor->setFormat(FormatId::Bold, val & FontStyle::Bold);
     _cursor->setFormat(FormatId::Italic, val & FontStyle::Italic);
-    _cursor->setFormat(FormatId::Underline, val & FontStyle::Underline);
+    _cursor->setFormat(FormatId::Underline, val & FontStyle::Underline);*/
 }
 
 void TextBase::setFamily(const QString& val)
 {
-    _cursor->setFormat(FormatId::FontFamily, val);
+    //_cursor->setFormat(FormatId::FontFamily, val);
 }
 
 void TextBase::setSize(const qreal& val)
 {
-    _cursor->setFormat(FormatId::FontSize, val);
+    //_cursor->setFormat(FormatId::FontSize, val);
 }
 
 //---------------------------------------------------------
