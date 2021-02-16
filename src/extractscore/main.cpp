@@ -65,7 +65,12 @@ std::unordered_map<std::string, InstrumentInfo> infoMap = {
     {"brass.trombone",      {"brass.trombone",          museprotocol::Note_Instrument::Note_Instrument_Trombone}},
     {"brass.tuba",          {"brass.tuba",              museprotocol::Note_Instrument::Note_Instrument_Tuba}},
     {"pluck.harp",          {"pluck.harp",              museprotocol::Note_Instrument::Note_Instrument_Harp}},
-    //{""}
+    {"keyboard.piano",      {"keyboard.piano",          museprotocol::Note_Instrument::Note_Instrument_Piano}},
+    {"strings.violin",      {"strings.violin",          museprotocol::Note_Instrument::Note_Instrument_Violins}},
+    {"strings.viola",       {"strings.viola",           museprotocol::Note_Instrument::Note_Instrument_Violas}},
+    {"strings.cello",       {"strings.cello",           museprotocol::Note_Instrument::Note_Instrument_Violoncellos}},
+    {"strings.contrabass",  {"strings.contrabass",      museprotocol::Note_Instrument::Note_Instrument_Contrabasses}},
+
 };
 
 struct VolumeReference {
@@ -473,6 +478,12 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
     }
 }
 
+void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+    return;
+}
+
+
 int main(int argc, char* argv[]) {
     // parse args (3 args)
     if (argc < 3) {
@@ -497,6 +508,8 @@ int main(int argc, char* argv[]) {
     notation.load(score_path);*/
     MScore::testMode = true;
     MScore::noGui = true;
+
+    qInstallMessageHandler(myMessageOutput);
     QApplication app(argc, argv);
 
     auto mscoreGlobal = Ms::MScore();
