@@ -396,7 +396,7 @@ void extractSegments(Ms::Score* currscore, museprotocol::Score& score) {
 
 void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
     Ms::Measure* m = currscore->firstMeasure();
-    Fraction currTimeSig; // same for at least one measure
+    Fraction currTimeSig = Fraction(4,4); // same for at least one measure
     int measureIdx = 0;
     std::vector<museprotocol::Track*> track_ptrs;
     
@@ -405,8 +405,15 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
         Ms::Segment* s = m->first(SegmentType::TimeSig);
         if (s) {
             // Time Signature, not necessarily used. Record at most one signature here
-            TimeSig* timesig = static_cast<TimeSig*>(s->element(0));
-            currTimeSig = timesig->sig();
+            TimeSig* timesig = nullptr;
+            for (auto* e : s->elist()) {
+                if (e) {
+                    timesig = static_cast<TimeSig*>(e);
+                    break;
+                }
+            }
+            if(timesig)
+                currTimeSig = timesig->sig();
         }
 
         // ChordRest segments
@@ -439,7 +446,8 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
 
                         museprotocol::Note_Volume vol_enum = calcVolume(chord);
 
-                        if (track_ptrs[trackIdx]->instrument() == museprotocol::Track_Instrument::Track_Instrument_Unknown) {
+                        if (track_ptrs[trackIdx]->instrument() == museprotocol::Track_Instrument::Track_Instrument_Unknown
+                            && track_ptrs[trackIdx]->instrumentname().empty()) {
                             // init instrument
                             Instrument* instr = chord->part()->instrument(chord->tick());
                             fillInstrumentField(instr, track_ptrs[trackIdx]);
@@ -455,15 +463,22 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                                 Note* currNote = n;
                                 while (currNote->tieFor()) {
                                     Note* nextNote = static_cast<Note*>(currNote->tieFor()->endElement());
-                                    assert(nextNote->pitch() == n->pitch());
+                                    if (nextNote->pitch() != n->pitch()) {
+                                        std::cout << "Not same pitch in a tie" << std::endl;
+                                        break;
+                                    }
+                                    //assert(nextNote->pitch() == n->pitch());
                                     // add nextNote's duration
                                     if (!nextNote)
+                                        break;
+                                    if (nextNote->chord()->durationType() == Ms::TDuration::DurationType::V_INVALID)
                                         break;
                                     duration += nextNote->chord()->durationType().fraction();
                                     currNote = nextNote;
                                 }
                             }
-                            
+                            if (!duration.isNotZero())
+                                continue;
                             museprotocol::TrackNote* note_proto = track_ptrs[trackIdx]->add_notes();
                             note_proto->set_duration(duration.ticks());
                             note_proto->set_pitch(n->pitch()); // 0-127

@@ -121,6 +121,7 @@ void MMRest::draw(QPainter* painter) const
 
 void MMRest::layout()
 {
+    return;
     m_number = measure()->mmRestCount();
 
     for (Element* e : el()) {
