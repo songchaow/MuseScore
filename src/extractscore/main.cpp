@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <filesystem>
+#include <stdexcept>
 
 #include <QDebug>
 
@@ -152,6 +153,7 @@ void matchInstrumentfromID(std::string instrID, ProtocolClass* note) {
 
     if (res == infoMap.end()) {
         std::cout << "Instrument " << instrID << " not found." << std::endl;
+        note->set_instrument(static_cast<ProtocolClass::Instrument>(museprotocol::Track_Instrument::Track_Instrument_Unknown));
         return;
     }
     
@@ -459,7 +461,6 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                             note_proto->set_duration(duration.ticks());
                             note_proto->set_pitch(n->pitch()); // 0-127
                             note_proto->set_vol(static_cast<museprotocol::TrackNote::Volume>(vol_enum));
-                            // todo: set position
                             note_proto->set_pbar(measureIdx);
                             note_proto->set_poffset(offsetBarInt);
                         }
@@ -510,11 +511,23 @@ int main(int argc, char* argv[]) {
     constexpr int buff_len = 1024 * 1024 * 50;
     std::vector<char> buffer(buff_len);
 
-    for (const auto& p : fs::directory_iterator(score_dir_path)) {
-        std::string score_path = p.path().generic_string();
+    FileStatusRecord binrecord(score_dir_path);
+
+    //for (const auto& p : fs::directory_iterator(score_dir_path)) {
+    for(auto &p : binrecord) {
+        std::string score_path = score_dir_path + '/' + p.first;
+        //std::string score_path = p.path().generic_string();
         std::shared_ptr<MasterScore> currscore = std::make_shared<MasterScore>(mscoreGlobal.baseStyle());
         mu::notation::MsczNotationReader reader;
-        reader.read(currscore.get(), score_path);
+        try {
+            reader.read(currscore.get(), score_path);
+        }
+        catch (std::exception err) {
+            std::cout << "Open score failed. Msg:" + std::string(err.what()) << std::endl;
+            // log error. just append for now
+
+            continue;
+        }
         currscore->updateVelo();
         std::string filenameBase = filenamefromString(score_path);
 
@@ -531,6 +544,8 @@ int main(int argc, char* argv[]) {
         score.SerializeToArray(buffer.data(), bytesize);
         std::ofstream f(output_path + '/' + filenameBase + ".bin", std::ios::binary);
         f.write(buffer.data(), bytesize);
+
+        p.second = binrecord.currVersion();
     }
 
     
