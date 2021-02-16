@@ -92,53 +92,50 @@ museprotocol::Note_Volume nearestVolumeEnum(int vol) {
     return ret;
 }
 
-void fillInstrumentField(Note* n, Instrument* src, museprotocol::Note* note) {
-    if (src->instrumentId() == "strings.group") {
-        QString longname = src->longNames()[0].name();
-        QString channelName = src->channel(n->subchannel())->name();
-        if (longname == "Violoncellos") {
+template<typename ProtocolClass>
+void fillStringInstrumentFromName(QString longname, QString channelName, ProtocolClass* note) {
+    int chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Unknown;
+    if (longname == "Violoncellos") {
             if(channelName=="arco")
-                note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Violoncellos);
+                chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Violoncellos;
             else if(channelName=="pizzicato")
-                note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Violoncellos_pizz);
+                chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Violoncellos_pizz;
             else if(channelName=="tremolo")
-                note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Violoncellos_trem);
+                chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Violoncellos_trem;
         }
         else if (longname == "Violins") {
             if (channelName == "arco")
-                note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Violins);
+                chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Violins;
             else if (channelName == "pizzicato")
-                note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Violins_pizz);
+                chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Violins_pizz;
             else if (channelName == "tremolo")
-                note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Violins_trem);
+                chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Violins_trem;
         }
         else if (longname == "Violas") {
             if (channelName == "arco")
-                note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Violas);
+                chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Violas;
             else if (channelName == "pizzicato")
-                note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Violas_pizz);
+                chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Violas_pizz;
             else if (channelName == "tremolo")
-                note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Violas_trem);
+                chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Violas_trem;
         }
         else if (longname == "Contrabasses") {
             if (channelName == "arco")
-                note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Contrabasses);
+                chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Contrabasses;
             else if (channelName == "pizzicato")
-                note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Contrabasses_pizz);
+                chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Contrabasses_pizz;
             else if (channelName == "tremolo")
-                note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Contrabasses_trem);
+                chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Contrabasses_trem;
         }
+        note->set_instrument(static_cast<ProtocolClass::Instrument>(chosen_instrument));
         return;
-    }
-    QString instrID = src->instrumentId();
-    if (instrID.isEmpty()) {
-        std::cout << "Empty Instrument ID" << std::endl;
-        note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Unknown);
-        return;
-    }
-    auto res = infoMap.find(instrID.toStdString());
+}
+
+template<typename ProtocolClass>
+void matchInstrumentfromID(std::string instrID, ProtocolClass* note) {
+    auto res = infoMap.find(instrID);
     if (res == infoMap.end()) {
-        std::string instrIDpre = instrID.toStdString();
+        std::string instrIDpre = instrID;
         do {
             // shrink. remove the last point and following content
             int idxAfterPoint = instrIDpre.size();
@@ -154,18 +151,68 @@ void fillInstrumentField(Note* n, Instrument* src, museprotocol::Note* note) {
     }
 
     if (res == infoMap.end()) {
-        std::cout << "Instrument " << instrID.toStdString() << " not found." << std::endl;
+        std::cout << "Instrument " << instrID << " not found." << std::endl;
         return;
     }
     
     else {
         // if exactly match
-        if (res->second.id != "*" && res->second.id != instrID.toStdString()) {
-            std::cout << "Instrument ID " << instrID.toStdString() << " does not exactly match. ";
+        if (res->second.id != "*" && res->second.id != instrID) {
+            std::cout << "Instrument ID " << instrID << " does not exactly match. ";
             std::cout << "Result Str: " << res->second.id << std::endl;
         }
-        note->set_instrument(res->second.enumval);
+        note->set_instrument(static_cast<ProtocolClass::Instrument>(res->second.enumval));
     }
+}
+
+void fillInstrumentField(Instrument* src, museprotocol::Track* track) {
+    if (src->instrumentId() == "strings.group") {
+        QString longname = src->longNames()[0].name();
+        QString channelName = src->channel(0)->name();
+        fillStringInstrumentFromName(longname, channelName, track);
+    }
+    QString instrID = src->instrumentId();
+    if (instrID.isEmpty()) {
+        std::cout << "Empty Instrument ID" << std::endl;
+        track->set_instrument(museprotocol::Track_Instrument::Track_Instrument_Unknown);
+        
+        return;
+    }
+    // fill from instrID
+    matchInstrumentfromID(instrID.toStdString(), track);
+}
+
+void fillInstrumentField(Instrument* src, museprotocol::Note* note) {
+    if (src->instrumentId() == "strings.group") {
+        QString longname = src->longNames()[0].name();
+        QString channelName = src->channel(0)->name();
+        fillStringInstrumentFromName(longname, channelName, note);
+    }
+    QString instrID = src->instrumentId();
+    if (instrID.isEmpty()) {
+        std::cout << "Empty Instrument ID" << std::endl;
+        note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Unknown);
+        return;
+    }
+    // fill from instrID
+    matchInstrumentfromID(instrID.toStdString(), note);
+}
+
+// more accurate version
+void fillInstrumentField(Note* n, Instrument* src, museprotocol::Note* note) {
+    if (src->instrumentId() == "strings.group") {
+        QString longname = src->longNames()[0].name();
+        QString channelname = src->channel(n->subchannel())->name();
+        fillStringInstrumentFromName(longname, channelname, note);
+    }
+    // other instruments
+    QString instrID = src->instrumentId();
+    if (instrID.isEmpty()) {
+        std::cout << "Empty Instrument ID" << std::endl;
+        note->set_instrument(museprotocol::Note_Instrument::Note_Instrument_Unknown);
+        return;
+    }
+    matchInstrumentfromID(instrID.toStdString(), note);
 }
 
 museprotocol::Segment_VolumeChange calcVolumeChange(Ms::Chord* c) {
@@ -211,6 +258,22 @@ bool findRamp(const ChangeMap& velocities, Fraction tick, ChangeEvent& ramp) {
         }
     }
     return false;
+}
+
+museprotocol::Note_Volume calcVolume(Ms::Chord* chord) {
+    int tickpos = chord->tick().ticks();
+    int chordTickLen = chord->actualTicks().ticks();
+    Note* firstNote = chord->notes()[0];
+    int ondelayticks;
+    if (firstNote->playEvents().empty())
+        ondelayticks = 0;
+    else
+        ondelayticks = chordTickLen * firstNote->playEvents()[0].ontime() / 1000; // delay of the NoteEvent from the chord starting tick
+    ChangeMap& veloEvents = chord->staff()->velocities();
+    ChangeMap& veloMulEvents = chord->staff()->velocityMultiplications();
+    int volume = chord->staff()->velocities().val(Fraction::fromTicks(tickpos + ondelayticks));
+    museprotocol::Note_Volume vol_enum = nearestVolumeEnum(volume);
+    return vol_enum;
 }
 
 
@@ -264,13 +327,7 @@ void extractSegments(Ms::Score* currscore, museprotocol::Score& score) {
                                 ;
                             }
                             // volume (same for all notes in a chord)
-                            int tickpos = chord->tick().ticks();
-                            int chordTickLen = chord->actualTicks().ticks();
-                            int ondelayticks = chordTickLen * chord->notes()[0]->playEvents()[0].ontime() / 1000; // delay of the NoteEvent from the chord starting tick
-                            ChangeMap& veloEvents = chord->staff()->velocities();
-                            ChangeMap& veloMulEvents = chord->staff()->velocityMultiplications();
-                            int volume = chord->staff()->velocities().val(Fraction::fromTicks(tickpos + ondelayticks));
-                            museprotocol::Note_Volume vol_enum = nearestVolumeEnum(volume);
+                            museprotocol::Note_Volume vol_enum = calcVolume(chord);
                             // volume change for segment
                             museprotocol::Segment_VolumeChange currrVolChange = calcVolumeChange(chord);
                             if (currrVolChange != museprotocol::Segment_VolumeChange_None)
@@ -352,16 +409,60 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                 const std::vector<Element*>& elements = s->elist();
                 // initialize
                 if (track_ptrs.empty()) {
-                    for (int i = 0; i < elements.size() / VOICES; i++)
+                    for (int i = 0; i < elements.size() / VOICES; i++) {
                         track_ptrs.push_back(score.add_tracks());
+                        track_ptrs[i]->set_instrument(museprotocol::Track_Instrument::Track_Instrument_Unknown);
+                    }
                 }
+                // calc poffset in bar
+                Fraction offsetBar = s->rtick() * currTimeSig.numerator() * 32 / currTimeSig.denominator();
+                int offsetBarInt = offsetBar.numerator() / offsetBar.denominator();
                 // add notes
                 for (int i = 0; i < elements.size(); i++) {
                     int trackIdx = i / VOICES;
                     auto e = elements[i];
                     if (e && e->isChord()) {
                         Ms::Chord* chord = static_cast<Ms::Chord*>(e);
-                        
+                        if (chord->crossMeasure() == CrossMeasure::SECOND) {
+                            // already counted in FIRST
+                            continue;
+                        }
+
+                        museprotocol::Note_Volume vol_enum = calcVolume(chord);
+
+                        if (track_ptrs[trackIdx]->instrument() == museprotocol::Track_Instrument::Track_Instrument_Unknown) {
+                            // init instrument
+                            Instrument* instr = chord->part()->instrument(chord->tick());
+                            fillInstrumentField(instr, track_ptrs[trackIdx]);
+                        }
+                        // iterate through notes in chord
+                        for (Ms::Note* n : chord->notes()) {
+                            // if it's tied to previous notes, skip it
+                            if (n->tieBack())
+                                continue;
+                            Fraction duration = chord->durationType().fraction();
+                            if (n->tieFor()) {
+                                // find all after notes and sum the duration
+                                Note* currNote = n;
+                                while (currNote->tieFor()) {
+                                    Note* nextNote = static_cast<Note*>(currNote->tieFor()->endElement());
+                                    assert(nextNote->pitch() == n->pitch());
+                                    // add nextNote's duration
+                                    if (!nextNote)
+                                        break;
+                                    duration += nextNote->chord()->durationType().fraction();
+                                    currNote = nextNote;
+                                }
+                            }
+                            
+                            museprotocol::TrackNote* note_proto = track_ptrs[trackIdx]->add_notes();
+                            note_proto->set_duration(duration.ticks());
+                            note_proto->set_pitch(n->pitch()); // 0-127
+                            note_proto->set_vol(static_cast<museprotocol::TrackNote::Volume>(vol_enum));
+                            // todo: set position
+                            note_proto->set_pbar(measureIdx);
+                            note_proto->set_poffset(offsetBarInt);
+                        }
                     }
                 }
             }
@@ -424,7 +525,7 @@ int main(int argc, char* argv[]) {
 
         museprotocol::Score score;
 
-
+        extractTracks(currscore.get(), score);
         
         int bytesize = score.ByteSizeLong();
         score.SerializeToArray(buffer.data(), bytesize);
