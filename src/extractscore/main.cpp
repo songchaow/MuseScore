@@ -173,6 +173,15 @@ void matchInstrumentfromID(std::string instrID, ProtocolClass* note) {
 }
 
 void fillInstrumentField(Instrument* src, museprotocol::Track* track) {
+    // always fill instrID string
+    QString instrID = src->instrumentId();
+    if (instrID.isEmpty()) {
+        std::cout << "Empty Instrument ID" << std::endl;
+        track->set_instrument(museprotocol::Track_Instrument::Track_Instrument_Unknown);
+        return;
+    }
+    track->set_instrumentname(instrID.toStdString());
+
     if (src->instrumentId() == "strings.group") {
         QString longname;
         if (!src->longNames().empty())
@@ -180,17 +189,10 @@ void fillInstrumentField(Instrument* src, museprotocol::Track* track) {
         QString channelName = src->channel(0)->name();
         fillStringInstrumentFromName(longname, channelName, track);
     }
-    QString instrID = src->instrumentId();
-    if (instrID.isEmpty()) {
-        std::cout << "Empty Instrument ID" << std::endl;
-        track->set_instrument(museprotocol::Track_Instrument::Track_Instrument_Unknown);
-        
-        return;
-    }
-    // fill from instrID
-    matchInstrumentfromID(instrID.toStdString(), track);
-    // fill instrID string
-    track->set_instrumentname(instrID.toStdString());
+    else
+        // fill from instrID
+        matchInstrumentfromID(instrID.toStdString(), track);
+    
 }
 
 void fillInstrumentField(Instrument* src, museprotocol::Note* note) {
@@ -591,7 +593,7 @@ int main(int argc, char* argv[]) {
         //std::string score_path = p.path().generic_string();
         int result = processSingleMscz(score_path, output_path, mscoreGlobal, midi_path);
         
-        if (result != 0)
+        if (result == 0)
             p.second = binrecord.currVersion();
         binrecord.writeVersionMap();
     }

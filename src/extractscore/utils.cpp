@@ -62,9 +62,10 @@ std::string filenamefromString(const std::string& s) {
 }
 
 void FileStatusRecord::buildVersionMap(std::string dir) {
+    version_map.clear();
     for(auto file : fs::directory_iterator(dir)) {
         auto s = file.path().filename().generic_string();
-        version_map[s] = 0;
+        version_map.push_back({ s,0 });
     }
 }
 
@@ -77,8 +78,8 @@ void FileStatusRecord::readVersionMap() {
         int version;
         metaFile >> filename;
         metaFile >> version;
-        if(metaFile)
-            version_map[filename] = version;
+        if (metaFile)
+            version_map.push_back({ filename,version });
         else
             break;
     }

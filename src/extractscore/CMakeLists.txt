@@ -1,7 +1,7 @@
 set(EXTRACT_EXE_NAME extractscore)
 set(EXTRACT_EXE_SRC main.cpp utils.cpp utils.h)
 
-add_compile_definitions(QT_NO_DEBUG_OUTPUT)
+add_compile_definitions(QT_NO_DEBUG_OUTPUT NDEBUG)
 # protobuf generation
 set(PROTOBUF_OUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 file(GLOB PROTOBUF_DEFINITION_FILES "*.proto")

@@ -18,8 +18,8 @@ std::string filenamefromString(const std::string& s);
 struct FileStatusRecordIt {
 private:
     int curr_ver;
-    std::unordered_map<std::string, int>::iterator curr_it;
-    std::unordered_map<std::string, int>::iterator end;
+    std::vector<std::pair<std::string, int>>::iterator curr_it;
+    std::vector<std::pair<std::string, int>>::iterator end;
     void forward() {
         if (curr_it == end)
             return;
@@ -38,9 +38,9 @@ public:
         return proxy;
     }
     bool operator!=(const FileStatusRecordIt& b) { return curr_it != b.curr_it; }
-    std::pair<const std::string, int>& operator*() { return *curr_it; }
-    FileStatusRecordIt(std::unordered_map<std::string, int>::iterator begin_it,
-        std::unordered_map<std::string, int>::iterator end, int curr_ver) :
+    std::pair<std::string, int>& operator*() { return *curr_it; }
+    FileStatusRecordIt(std::vector<std::pair<std::string, int>>::iterator begin_it,
+        std::vector<std::pair<std::string, int>>::iterator end, int curr_ver) :
         curr_it(begin_it), end(end), curr_ver(curr_ver) {}
 
 };
@@ -49,8 +49,8 @@ struct FileStatusRecord {
 private:
     std::string dir;
     int curr_ver;
-    std::unordered_map<std::string, int> version_map;
-    std::unordered_map<std::string, int>::iterator begin_it;
+    std::vector<std::pair<std::string, int>> version_map;
+    std::vector<std::pair<std::string, int>>::iterator begin_it;
     void buildVersionMap(std::string dir);
     void readVersionMap();
 public:
