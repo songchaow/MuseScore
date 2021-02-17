@@ -38,7 +38,6 @@ public:
         return proxy;
     }
     bool operator!=(const FileStatusRecordIt& b) { return curr_it != b.curr_it; }
-    bool operator==(const FileStatusRecordIt& b) { return curr_it == b.curr_it; }
     std::pair<std::string, int>& operator*() { return *curr_it; }
     FileStatusRecordIt(std::vector<std::pair<std::string, int>>::iterator begin_it,
         std::vector<std::pair<std::string, int>>::iterator end, int curr_ver) :

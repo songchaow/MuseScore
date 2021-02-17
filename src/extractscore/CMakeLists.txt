@@ -1,5 +1,7 @@
 set(EXTRACT_EXE_NAME extractscore)
 set(EXTRACT_EXE_SRC main.cpp utils.cpp utils.h)
+set(SINGLE_EXE_NAME single)
+set(SINGLE_EXE_SRC single.cpp utils.cpp utils.h)
 
 add_compile_definitions(QT_NO_DEBUG_OUTPUT NDEBUG)
 # protobuf generation
@@ -50,6 +52,8 @@ set(INCLUDES
     ${PROTOBUF_INCLUDE_DIR}
 )
 
+# extract
+
 add_executable(${EXTRACT_EXE_NAME} ${EXTRACT_EXE_SRC} ${PROTOBUF_MODELS_INCLUDES})
 set_target_properties(${EXTRACT_EXE_NAME} PROPERTIES COMPILE_FLAGS "-fPIC")
 target_link_libraries(${EXTRACT_EXE_NAME} ${REF_LIBS})
@@ -75,3 +79,36 @@ if(MSVC)
       set_target_properties(${EXTRACT_EXE_NAME} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "--debug")
    endif ()
 endif(MSVC)
+
+# single
+
+add_executable(${SINGLE_EXE_NAME} ${SINGLE_EXE_SRC} ${PROTOBUF_MODELS_INCLUDES})
+set_target_properties(${SINGLE_EXE_NAME} PROPERTIES COMPILE_FLAGS "-fPIC")
+target_link_libraries(${SINGLE_EXE_NAME} ${REF_LIBS})
+target_include_directories(${SINGLE_EXE_NAME} PUBLIC ${INCLUDES})
+if (OS_IS_WIN)
+    install(TARGETS ${SINGLE_EXE_NAME} RUNTIME DESTINATION bin )
+endif (OS_IS_WIN)
+
+if(MSVC)
+    # Force the "install" and "package" targets not to depend on the "all" target.
+   set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY true)
+   set(CMAKE_SKIP_PACKAGE_ALL_DEPENDENCY true)
+
+   # Set the debugging properties for the "mscore" project.
+   file(TO_NATIVE_PATH "${CMAKE_INSTALL_PREFIX}/bin" VS_DEBUGGER_WORKING_DIRECTORY)
+   if (NOT ${CMAKE_VERSION} VERSION_LESS "3.12.0")
+      set_target_properties(${SINGLE_EXE_NAME} PROPERTIES VS_DEBUGGER_COMMAND "${VS_DEBUGGER_WORKING_DIRECTORY}\\${SINGLE_EXE_NAME}${CMAKE_EXECUTABLE_SUFFIX}")
+   endif ()
+   if (NOT ${CMAKE_VERSION} VERSION_LESS "3.8.0")
+      set_target_properties(${SINGLE_EXE_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${VS_DEBUGGER_WORKING_DIRECTORY}")
+   endif ()
+   if (NOT ${CMAKE_VERSION} VERSION_LESS "3.13.0")
+      set_target_properties(${SINGLE_EXE_NAME} PROPERTIES VS_DEBUGGER_COMMAND_ARGUMENTS "--debug")
+   endif ()
+endif(MSVC)
+
+# parallel
+set(PARALLEL_PROJ_SRC parallel.cpp utils.cpp utils.h)
+
+add_executable(parallel ${PARALLEL_PROJ_SRC})
