@@ -58,9 +58,9 @@ add_executable(${EXTRACT_EXE_NAME} ${EXTRACT_EXE_SRC} ${PROTOBUF_MODELS_INCLUDES
 set_target_properties(${EXTRACT_EXE_NAME} PROPERTIES COMPILE_FLAGS "-fPIC")
 target_link_libraries(${EXTRACT_EXE_NAME} ${REF_LIBS})
 target_include_directories(${EXTRACT_EXE_NAME} PUBLIC ${INCLUDES})
-if (OS_IS_WIN)
-    install(TARGETS ${EXTRACT_EXE_NAME} RUNTIME DESTINATION bin )
-endif (OS_IS_WIN)
+
+install(TARGETS ${EXTRACT_EXE_NAME} RUNTIME DESTINATION bin )
+
 
 if(MSVC)
     # Force the "install" and "package" targets not to depend on the "all" target.
@@ -86,9 +86,8 @@ add_executable(${SINGLE_EXE_NAME} ${SINGLE_EXE_SRC} ${PROTOBUF_MODELS_INCLUDES})
 set_target_properties(${SINGLE_EXE_NAME} PROPERTIES COMPILE_FLAGS "-fPIC")
 target_link_libraries(${SINGLE_EXE_NAME} ${REF_LIBS})
 target_include_directories(${SINGLE_EXE_NAME} PUBLIC ${INCLUDES})
-if (OS_IS_WIN)
-    install(TARGETS ${SINGLE_EXE_NAME} RUNTIME DESTINATION bin )
-endif (OS_IS_WIN)
+
+install(TARGETS ${SINGLE_EXE_NAME} RUNTIME DESTINATION bin )
 
 if(MSVC)
     # Force the "install" and "package" targets not to depend on the "all" target.
@@ -112,3 +111,9 @@ endif(MSVC)
 set(PARALLEL_PROJ_SRC parallel.cpp utils.cpp utils.h)
 
 add_executable(parallel ${PARALLEL_PROJ_SRC})
+if (UNIX)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package(Threads REQUIRED)
+    target_link_libraries(parallel PRIVATE Threads::Threads)
+endif (UNIX)
+install(TARGETS parallel RUNTIME DESTINATION bin )

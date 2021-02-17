@@ -76,12 +76,17 @@ void runJob(FileStatusRecord* record) {
                 break;
         }
         // execute
+        std::cout << "Working on" << chosen.first << std::endl;
         std::string score_path = score_dir_path+'/'+chosen.first;
-        std::string cmd = "";
+        std::string cmd = "./";
         cmd += program_name + ' ';
         cmd += '\"' + score_path + '\"' + ' ';
         cmd += '\"' + output_path + '\"';
         int retval = std::system(cmd.c_str());
+        if(retval == 0)
+            std::cout << "Succeed." << std::endl;
+        else
+            std::cout  << "Failed." << std::endl;
         // save in memory and IN FILE
         {
             const std::lock_guard<std::mutex> lock(record_lock);
@@ -121,9 +126,9 @@ int main(int argc, char* argv[]) {
 
     FileStatusRecord binrecord(score_dir_path);
     std::vector<std::thread> thread_pool;
-    std::cout << "Multithread begin" << std::endl;
     int thread_count = std::thread::hardware_concurrency();
-    thread_count = 2;
+    std::cout << thread_count << " thread begin" << std::endl;
+    //thread_count = 2;
     for(int i = 0; i < thread_count; i++) {
         thread_pool.push_back(std::thread(runJob, &binrecord));
     }
