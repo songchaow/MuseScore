@@ -100,7 +100,7 @@ museprotocol::Note_Volume nearestVolumeEnum(int vol) {
 
 template<typename ProtocolClass>
 void fillStringInstrumentFromName(QString longname, QString channelName, ProtocolClass* note) {
-    int chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Unknown;
+    int chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Violins;
     if (longname == "Violoncellos") {
             if(channelName=="arco")
                 chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Violoncellos;
@@ -174,7 +174,9 @@ void matchInstrumentfromID(std::string instrID, ProtocolClass* note) {
 
 void fillInstrumentField(Instrument* src, museprotocol::Track* track) {
     if (src->instrumentId() == "strings.group") {
-        QString longname = src->longNames()[0].name();
+        QString longname;
+        if (!src->longNames().empty())
+            longname = src->longNames()[0].name();
         QString channelName = src->channel(0)->name();
         fillStringInstrumentFromName(longname, channelName, track);
     }
