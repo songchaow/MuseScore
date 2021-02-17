@@ -51,6 +51,7 @@ set(INCLUDES
 )
 
 add_executable(${EXTRACT_EXE_NAME} ${EXTRACT_EXE_SRC} ${PROTOBUF_MODELS_INCLUDES})
+set_target_properties(${EXTRACT_EXE_NAME} PROPERTIES COMPILE_FLAGS "-fPIC")
 target_link_libraries(${EXTRACT_EXE_NAME} ${REF_LIBS})
 target_include_directories(${EXTRACT_EXE_NAME} PUBLIC ${INCLUDES})
 if (OS_IS_WIN)

@@ -133,7 +133,7 @@ void fillStringInstrumentFromName(QString longname, QString channelName, Protoco
             else if (channelName == "tremolo")
                 chosen_instrument = museprotocol::Note_Instrument::Note_Instrument_Contrabasses_trem;
         }
-        note->set_instrument(static_cast<ProtocolClass::Instrument>(chosen_instrument));
+        note->set_instrument(static_cast<typename ProtocolClass::Instrument>(chosen_instrument));
         return;
 }
 
@@ -158,7 +158,7 @@ void matchInstrumentfromID(std::string instrID, ProtocolClass* note) {
 
     if (res == infoMap.end()) {
         std::cout << "Instrument " << instrID << " not found." << std::endl;
-        note->set_instrument(static_cast<ProtocolClass::Instrument>(museprotocol::Track_Instrument::Track_Instrument_Unknown));
+        note->set_instrument(static_cast<typename ProtocolClass::Instrument>(museprotocol::Track_Instrument::Track_Instrument_Unknown));
         return;
     }
     
@@ -168,7 +168,7 @@ void matchInstrumentfromID(std::string instrID, ProtocolClass* note) {
             std::cout << "Instrument ID " << instrID << " does not exactly match. ";
             std::cout << "Result Str: " << res->second.id << std::endl;
         }
-        note->set_instrument(static_cast<ProtocolClass::Instrument>(res->second.enumval));
+        note->set_instrument(static_cast<typename ProtocolClass::Instrument>(res->second.enumval));
     }
 }
 
