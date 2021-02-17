@@ -70,7 +70,7 @@ void FileStatusRecord::buildVersionMap(std::string dir) {
 }
 
 void FileStatusRecord::readVersionMap() {
-    std::string record_path = dir + '\\' + record_name;
+    std::string record_path = dir + '/' + record_name;
     std::ifstream metaFile(record_path);
     metaFile >> curr_ver;
     for(;;) {
@@ -86,7 +86,7 @@ void FileStatusRecord::readVersionMap() {
 }
 
 void FileStatusRecord::writeVersionMap() {
-    std::string record_path = dir + '\\' + record_name;
+    std::string record_path = dir + '/' + record_name;
     std::ofstream metaFile(record_path);
     metaFile << curr_ver << std::endl;
     for (auto i : version_map) {
@@ -95,7 +95,7 @@ void FileStatusRecord::writeVersionMap() {
 }
 
 FileStatusRecord::FileStatusRecord(std::string dir) : dir(dir) {
-    std::string record_path = dir + '\\' + record_name;
+    std::string record_path = dir + '/' + record_name;
     if (fs::exists(record_path)) {
         readVersionMap();
         // if stored curr_ver >0, that's it. if ==0, we make curr_ver 1

@@ -4,12 +4,14 @@
 #include <thread>
 #include <mutex>
 #include <cstdlib>
+#include <atomic>
 #include "stdio.h"
 namespace fs = std::filesystem;
 
 std::mutex record_lock;
 
-bool occupied[10000] = {false};
+// std::atomic<bool> occusingle{false};
+std::atomic<bool> occupied[10000] = {false};
 
 std::string score_dir_path;
 std::string output_path;
@@ -66,17 +68,18 @@ void runJob(FileStatusRecord* record) {
             for(;it != record->end();it++,idx++) {
                 if((*it).second == record->currVersion())
                     continue;
-                if(occupied[idx])
+                bool isoccupied = occupied[idx].load();
+                if(isoccupied)
                     continue;
                 chosen = *it;
-                occupied[idx] = true;
+                occupied[idx].store(true);
                 break;
             }
             if(it==record->end())
                 break;
         }
         // execute
-        std::cout << "Working on" << chosen.first << std::endl;
+        
         std::string score_path = score_dir_path+'/'+chosen.first;
         std::string cmd = "./";
         cmd += program_name + ' ';
@@ -84,17 +87,19 @@ void runJob(FileStatusRecord* record) {
         cmd += '\"' + output_path + '\"';
         int retval = std::system(cmd.c_str());
         if(retval == 0)
-            std::cout << "Succeed." << std::endl;
+            std::cout << "Succeeded on" << chosen.first << std::endl;
         else
-            std::cout  << "Failed." << std::endl;
+            std::cout << "Failed on" << chosen.first << std::endl;
         // save in memory and IN FILE
         {
             const std::lock_guard<std::mutex> lock(record_lock);
-            occupied[idx] = false;
+            // occupied[idx].store(false);
             if(retval==0)
                 (*it).second = record->currVersion();
             record->writeVersionMap();
         }
+        it++;
+        idx++;
     }
 }
 
@@ -109,10 +114,14 @@ int main(int argc, char* argv[]) {
         std::cerr << "Too few arguments provided." << std::endl;
         return 1;
     }
-    if (argc >= 4)
-        std::cout << "Warning: too many arguments." << std::endl;
+    int thread_count = std::thread::hardware_concurrency();
+    if (argc >= 4) {
+        std::cout << "Use customized thread count" << std::endl;
+        thread_count = std::stoi(argv[3]);
+    }
     score_dir_path = argv[1];
     output_path = argv[2];
+
     //const int parallel_count = std::stoi(argv[3]);
     if (output_path.back() == '/' || output_path.back() == '\\')
         output_path.pop_back();
@@ -125,10 +134,10 @@ int main(int argc, char* argv[]) {
         fs::create_directories(midi_path);
 
     FileStatusRecord binrecord(score_dir_path);
+    std::cout << "Current version:" << binrecord.currVersion() << std::endl;
     std::vector<std::thread> thread_pool;
-    int thread_count = std::thread::hardware_concurrency();
+    
     std::cout << thread_count << " thread begin" << std::endl;
-    //thread_count = 2;
     for(int i = 0; i < thread_count; i++) {
         thread_pool.push_back(std::thread(runJob, &binrecord));
     }
