@@ -502,6 +502,47 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
     return;
 }
 
+int processSingleMscz(std::string score_path, std::string output_path, MScore& mscoreGlobal, std::string midi_path) {
+    constexpr int buff_len = 1024 * 1024 * 50;
+    std::vector<char> buffer(buff_len);
+    std::shared_ptr<MasterScore> currscore = std::make_shared<MasterScore>(mscoreGlobal.baseStyle());
+    mu::notation::MsczNotationReader reader;
+    try {
+        reader.read(currscore.get(), score_path);
+    }
+    catch (std::exception err) {
+        std::cout << "Open score failed. Msg:" + std::string(err.what()) << std::endl;
+        // log error. just append for now
+        return -1;
+    }
+    currscore->updateVelo();
+    currscore->doLayout();
+    std::string filenameBase = filenamefromString(score_path);
+
+    // output midi
+    ExportMidi midif(currscore.get());
+    try {
+        midif.write(QString::fromStdString(midi_path + '/' + filenameBase + ".mid"), true, true);
+    }
+    catch (std::exception err) {
+        std::cout << "Write MIDI failed. Msg:" + std::string(err.what()) << std::endl;
+        // log error. just append for now
+    }
+    museprotocol::Score score;
+    try {
+        extractTracks(currscore.get(), score);
+    }
+    catch (std::exception err) {
+        std::cout << "Extract score failed. Msg:" + std::string(err.what()) << std::endl;
+        return -1;
+    }
+
+    int bytesize = score.ByteSizeLong();
+    score.SerializeToArray(buffer.data(), bytesize);
+    std::ofstream f(output_path + '/' + filenameBase + ".bin", std::ios::binary);
+    f.write(buffer.data(), bytesize);
+    return 0;
+}
 
 int main(int argc, char* argv[]) {
     // parse args (3 args)
@@ -540,8 +581,7 @@ int main(int argc, char* argv[]) {
 
     MScore::init();
     
-    constexpr int buff_len = 1024 * 1024 * 50;
-    std::vector<char> buffer(buff_len);
+    
 
     FileStatusRecord binrecord(score_dir_path);
 
@@ -549,45 +589,10 @@ int main(int argc, char* argv[]) {
     for(auto &p : binrecord) {
         std::string score_path = score_dir_path + '/' + p.first;
         //std::string score_path = p.path().generic_string();
-        std::shared_ptr<MasterScore> currscore = std::make_shared<MasterScore>(mscoreGlobal.baseStyle());
-        mu::notation::MsczNotationReader reader;
-        try {
-            reader.read(currscore.get(), score_path);
-        }
-        catch (std::exception err) {
-            std::cout << "Open score failed. Msg:" + std::string(err.what()) << std::endl;
-            // log error. just append for now
-
-            continue;
-        }
-        currscore->updateVelo();
-        currscore->doLayout();
-        std::string filenameBase = filenamefromString(score_path);
-
-        // output midi
-        ExportMidi midif(currscore.get());
-        try {
-            midif.write(QString::fromStdString(midi_path + '/' + filenameBase + ".mid"), true, true);
-        }
-        catch (std::exception err) {
-            std::cout << "Write MIDI failed. Msg:" + std::string(err.what()) << std::endl;
-            // log error. just append for now
-        }
-        museprotocol::Score score;
-        try {
-            extractTracks(currscore.get(), score);
-        }
-        catch (std::exception err) {
-            std::cout << "Extract score failed. Msg:" + std::string(err.what()) << std::endl;
-            continue;
-        }
+        int result = processSingleMscz(score_path, output_path, mscoreGlobal, midi_path);
         
-        int bytesize = score.ByteSizeLong();
-        score.SerializeToArray(buffer.data(), bytesize);
-        std::ofstream f(output_path + '/' + filenameBase + ".bin", std::ios::binary);
-        f.write(buffer.data(), bytesize);
-
-        p.second = binrecord.currVersion();
+        if (result != 0)
+            p.second = binrecord.currVersion();
         binrecord.writeVersionMap();
     }
 

@@ -48,13 +48,13 @@ static const char* tremoloName[] = {
 };
 
 Tremolo::Tremolo(Score* score)
-    : Element(score, ElementFlag::MOVABLE)
+    : Element(score, ElementFlag::MOVABLE), _lines(1)
 {
     initElementStyle(&tremoloStyle);
 }
 
 Tremolo::Tremolo(const Tremolo& t)
-    : Element(t)
+    : Element(t), _lines(1)
 {
     setTremoloType(t.tremoloType());
     _chord1       = t.chord1();
