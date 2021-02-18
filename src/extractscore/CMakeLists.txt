@@ -8,7 +8,7 @@ add_compile_definitions(QT_NO_DEBUG_OUTPUT NDEBUG)
 set(PROTOBUF_OUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 file(GLOB PROTOBUF_DEFINITION_FILES "*.proto")
 foreach(file ${PROTOBUF_DEFINITION_FILES})
-    set(PROTOBUF_CMD "protoc" "--proto_path=${CMAKE_CURRENT_LIST_DIR}" "--cpp_out=${PROTOBUF_OUT_DIRECTORY}" "${file}")
+    set(PROTOBUF_CMD "protoc" "--proto_path=${CMAKE_CURRENT_LIST_DIR}" "--cpp_out=${PROTOBUF_OUT_DIRECTORY}" "--python_out=${PROTOBUF_OUT_DIRECTORY}" "${file}")
     execute_process(COMMAND ${PROTOBUF_CMD}
             WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
             RESULT_VARIABLE PROTOBUF_RESULT

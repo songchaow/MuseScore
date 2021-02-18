@@ -75,7 +75,7 @@ message MelodyNote {
         FFF = 7;
     }
     Volume vol = 5;
-
+    uint32 volval = 6;
 }
 
 message TrackNote {
@@ -96,6 +96,7 @@ message TrackNote {
         FFF = 7;
     }
     Volume vol = 5;
+    uint32 volval = 6;
 }
 
 message Track {

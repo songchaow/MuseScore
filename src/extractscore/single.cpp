@@ -289,6 +289,20 @@ museprotocol::Note_Volume calcVolume(Ms::Chord* chord) {
     return vol_enum;
 }
 
+int calcVolumeInt(Ms::Chord* chord) {
+    int tickpos = chord->tick().ticks();
+    int chordTickLen = chord->actualTicks().ticks();
+    Note* firstNote = chord->notes()[0];
+    int ondelayticks;
+    if (firstNote->playEvents().empty())
+        ondelayticks = 0;
+    else
+        ondelayticks = chordTickLen * firstNote->playEvents()[0].ontime() / 1000; // delay of the NoteEvent from the chord starting tick
+    ChangeMap& veloEvents = chord->staff()->velocities();
+    ChangeMap& veloMulEvents = chord->staff()->velocityMultiplications();
+    int volume = chord->staff()->velocities().val(Fraction::fromTicks(tickpos + ondelayticks));
+    return volume;
+}
 
 void extractSegments(Ms::Score* currscore, museprotocol::Score& score) {
     // iterate segments
@@ -317,6 +331,7 @@ void extractSegments(Ms::Score* currscore, museprotocol::Score& score) {
                     museprotocol::Segment_VolumeChange volumeChange_seg = museprotocol::Segment_VolumeChange_None;
                     const std::vector<Element*>& elements = s->elist();
                     currSegment->set_pbar(measureIdx);
+                    // 
                     Fraction offsetBar = s->rtick() * currTimeSig.numerator() * 32 / currTimeSig.denominator();
                     int offsetBarInt = offsetBar.numerator() / offsetBar.denominator();
                     currSegment->set_poffset(offsetBarInt);
@@ -449,7 +464,7 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                         }
 
                         museprotocol::Note_Volume vol_enum = calcVolume(chord);
-
+                        int vol_val = calcVolumeInt(chord);
                         if (track_ptrs[trackIdx]->instrument() == museprotocol::Track_Instrument::Track_Instrument_Unknown
                             && track_ptrs[trackIdx]->instrumentname().empty()) {
                             // init instrument
@@ -487,6 +502,7 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                             note_proto->set_duration(duration.ticks());
                             note_proto->set_pitch(n->pitch()); // 0-127
                             note_proto->set_vol(static_cast<museprotocol::TrackNote::Volume>(vol_enum));
+                            note_proto->set_volval(vol_val);
                             note_proto->set_pbar(measureIdx);
                             note_proto->set_poffset(offsetBarInt);
                         }
