@@ -529,7 +529,7 @@ int processSingleMscz(std::string score_path, std::string output_path, MScore& m
     try {
         reader.read(currscore.get(), score_path);
     }
-    catch (std::exception err) {
+    catch (std::exception& err) {
         std::cout << "Open score failed. Msg:" + std::string(err.what()) << std::endl;
         // log error. just append for now
         return -1;
@@ -543,7 +543,7 @@ int processSingleMscz(std::string score_path, std::string output_path, MScore& m
     try {
         midif.write(QString::fromStdString(midi_path + '/' + filenameBase + ".mid"), true, true);
     }
-    catch (std::exception err) {
+    catch (std::exception& err) {
         std::cout << "Write MIDI failed. Msg:" + std::string(err.what()) << std::endl;
         // log error. just append for now
     }
@@ -551,7 +551,7 @@ int processSingleMscz(std::string score_path, std::string output_path, MScore& m
     try {
         extractTracks(currscore.get(), score);
     }
-    catch (std::exception err) {
+    catch (std::exception& err) {
         std::cout << "Extract score failed. Msg:" + std::string(err.what()) << std::endl;
         return -1;
     }
