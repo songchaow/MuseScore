@@ -450,7 +450,8 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                     }
                 }
                 // calc poffset in bar
-                Fraction offsetBar = s->rtick() * currTimeSig.numerator() * 32 / currTimeSig.denominator();
+                Fraction ratioTick = s->rtick();
+                Fraction offsetBar = ratioTick * 32;
                 int offsetBarInt = offsetBar.numerator() / offsetBar.denominator();
                 // add notes
                 for (int i = 0; i < elements.size(); i++) {
@@ -586,9 +587,10 @@ int main(int argc, char* argv[]) {
     notation.load(score_path);*/
     MScore::testMode = true;
     MScore::noGui = true;
+    MScore::noImages = true;
 
     qInstallMessageHandler(myMessageOutput);
-    QApplication app(argc, argv);
+    //QApplication app(argc, argv);
 
     auto mscoreGlobal = Ms::MScore();
     new MuseScoreCore;
