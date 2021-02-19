@@ -175,6 +175,11 @@ void matchInstrumentfromID(std::string instrID, ProtocolClass* note) {
 void fillInstrumentField(Instrument* src, museprotocol::Track* track) {
     // always fill instrID string
     QString instrID = src->instrumentId();
+    // always fill program ID
+    if(src->channel(0)) {
+        int midiprogram = src->channel(0)->program();
+        track->set_midiprogram(midiprogram);
+    }
     if (instrID.isEmpty()) {
         std::cout << "Empty Instrument ID" << std::endl;
         track->set_instrument(museprotocol::Track_Instrument::Track_Instrument_Unknown);
@@ -431,9 +436,18 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                     break;
                 }
             }
-            if(timesig)
+            if(timesig) {
                 currTimeSig = timesig->sig();
+                for(museprotocol::Track* t : track_ptrs) {
+                    museprotocol::TimeSig* timesig = t->add_timesigs();
+                    timesig->set_numerator(currTimeSig.numerator());
+                    timesig->set_denominator(currTimeSig.denominator());
+                    timesig->set_startnoteidx(t->notes_size());
+                }
+            }
         }
+
+        
 
         // ChordRest segments
         s = m->first(SegmentType::All);
@@ -447,6 +461,12 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                     for (int i = 0; i < elements.size() / VOICES; i++) {
                         track_ptrs.push_back(score.add_tracks());
                         track_ptrs[i]->set_instrument(museprotocol::Track_Instrument::Track_Instrument_Unknown);
+                    }
+                    for(museprotocol::Track* t : track_ptrs) {
+                        museprotocol::TimeSig* timesig = t->add_timesigs();
+                        timesig->set_numerator(currTimeSig.numerator());
+                        timesig->set_denominator(currTimeSig.denominator());
+                        timesig->set_startnoteidx(t->notes_size());
                     }
                 }
                 // calc poffset in bar

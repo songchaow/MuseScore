@@ -99,6 +99,12 @@ message TrackNote {
     uint32 volval = 6;
 }
 
+message TimeSig {
+    uint32 numerator = 1;
+    uint32 denominator = 2;
+    uint32 startNoteIdx = 3;
+}
+
 message Track {
     enum Instrument {
         // Wooodwinds
@@ -138,6 +144,8 @@ message Track {
     Instrument instrument = 1;
     string instrumentName = 2;
     repeated TrackNote notes = 3;
+    uint32 midiprogram = 4;
+    repeated TimeSig timesigs = 5;
 }
 
 message Segment {
