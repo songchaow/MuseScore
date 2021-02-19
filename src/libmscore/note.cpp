@@ -1109,16 +1109,7 @@ qreal Note::noteheadCenterX() const
 
 qreal Note::tabHeadWidth(const StaffType* tab) const
 {
-    qreal val;
-    if (tab && _fret != FRET_NONE && _string != STRING_NONE) {
-        QFont f    = tab->fretFont();
-        f.setPointSizeF(tab->fretFontSize());
-        QFontMetricsF fm(f, MScore::paintDevice());
-        val  = fm.width(_fretString) * magS();
-    } else {
-        val = headWidth();
-    }
-    return val;
+    return 1.f;
 }
 
 //---------------------------------------------------------

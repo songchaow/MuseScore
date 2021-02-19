@@ -428,68 +428,11 @@ void StaffType::setDurationMetrics() const
 // QFontMetrics[F]() returns results unreliably rounded to integral pixels;
 // use a scaled up font and then scale computed values down
 //      QFontMetricsF fm(durationFont());
-    QFont font(durationFont());
-    font.setPointSizeF(_durationFontSize);
-    QFontMetricsF fm(font, MScore::paintDevice());
-    QString txt(_durationFonts[_durationFontIdx].displayValue, int(TabVal::NUM_OF));
-    QRectF bb(fm.tightBoundingRect(txt));
-    // raise symbols by a default margin and, if marks are above lines, by half the line distance
-    // (converted from spatium units to raster units)
-    _durationGridYOffset = (TAB_DEFAULT_DUR_YOFFS - (_onLines ? 0.0 : lineDistance().val() * 0.5)) * SPATIUM20;
-    // this is the bottomest point of any duration sign
-    _durationYOffset        = _durationGridYOffset;
-    // move symbols so that the lowest margin 'sits' on the base line:
-    // move down by the whole part above (negative) the base line
-    // ( -bb.y() ) then up by the whole height ( -bb.height() )
-    _durationYOffset        -= (bb.height() + bb.y()) / 100.0;
-    _durationBoxH           = bb.height() / 100.0;
-    _durationBoxY           = _durationGridYOffset - bb.height() / 100.0;
-    // keep track of the conditions under which metrics have been computed
-    _refDPI = DPI;
-    _durationMetricsValid = true;
+    
 }
 
 void StaffType::setFretMetrics() const
 {
-    if (_fretMetricsValid && _refDPI == DPI) {
-        return;
-    }
-
-    QFontMetricsF fm(fretFont(), MScore::paintDevice());
-    QRectF bb;
-    // compute vertical displacement
-    if (_useNumbers) {
-        // compute total height of used characters
-        QString txt = QString();
-        for (int idx = 0; idx < 10; idx++) {    // use only first 10 digits
-            txt.append(_fretFonts[_fretFontIdx].displayDigit[idx]);
-        }
-        bb = fm.tightBoundingRect(txt);
-        // for numbers: centre on '0': move down by the whole part above (negative)
-        // the base line ( -bb.y() ) then up by half the whole height ( -bb.height()/2 )
-        QRectF bx(fm.tightBoundingRect(_fretFonts[_fretFontIdx].displayDigit[0]));
-        _fretYOffset = -(bx.y() + bx.height() / 2.0);
-        // _fretYOffset = -(bb.y() + bb.height()/2.0);  // <- using bbox of all chars
-    } else {
-        // compute total height of used characters
-        QString txt(_fretFonts[_fretFontIdx].displayLetter, NUM_OF_LETTERFRETS);
-        bb = fm.tightBoundingRect(txt);
-        // for letters: centre on the 'a' ascender, by moving down half of the part above the base line in bx
-        QRectF bx(fm.tightBoundingRect(_fretFonts[_fretFontIdx].displayLetter[0]));
-        _fretYOffset = -bx.y() / 2.0;
-    }
-    // if on string, we are done; if between strings, raise by half line distance
-    if (!_onLines) {
-        _fretYOffset -= lineDistance().val() * SPATIUM20 * 0.5;
-    }
-
-    // from _fretYOffset, compute _fretBoxH and _fretBoxY
-    _fretBoxH = bb.height();
-    _fretBoxY = bb.y() + _fretYOffset;
-
-    // keep track of the conditions under which metrics have been computed
-    _refDPI = DPI;
-    _fretMetricsValid = true;
 }
 
 //---------------------------------------------------------
@@ -919,59 +862,6 @@ TabDurationSymbol::TabDurationSymbol(const TabDurationSymbol& e)
 
 void TabDurationSymbol::layout()
 {
-    if (!_tab) {
-        setbbox(QRectF());
-        return;
-    }
-    qreal _spatium    = spatium();
-    qreal hbb, wbb, xbb, ybb;       // bbox sizes
-    qreal xpos, ypos;               // position coords
-
-    _beamGrid = TabBeamGrid::NONE;
-    Chord* chord = parent() && parent()->isChord() ? toChord(parent()) : nullptr;
-    // if no chord (shouldn't happens...) or not a special beam mode, layout regular symbol
-    if (!chord || !chord->isChord()
-        || (chord->beamMode() != Beam::Mode::BEGIN && chord->beamMode() != Beam::Mode::MID
-            && chord->beamMode() != Beam::Mode::END)) {
-        QFontMetricsF fm(_tab->durationFont(), MScore::paintDevice());
-        hbb   = _tab->durationBoxH();
-        wbb   = fm.width(_text);
-        xbb   = 0.0;
-        xpos  = 0.0;
-        ypos  = _tab->durationFontYOffset();
-        ybb   = _tab->durationBoxY() - ypos;
-        // with rests, move symbol down by half its displacement from staff
-        if (parent() && parent()->isRest()) {
-            ybb  += TAB_RESTSYMBDISPL * _spatium;
-            ypos += TAB_RESTSYMBDISPL * _spatium;
-        }
-    }
-    // if on a chord with special beam mode, layout an 'English'-style duration grid
-    else {
-        TablatureDurationFont font = _tab->_durationFonts[_tab->_durationFontIdx];
-        hbb   = font.gridStemHeight * _spatium;             // bbox height is stem height
-        wbb   = font.gridStemWidth * _spatium;              // bbox width is stem width
-        xbb   = -wbb * 0.5;                                 // bbox is half at left and half at right of stem centre
-        ybb   = -hbb;                                       // bbox top is at top of stem height
-        xpos  = 0.75 * _spatium;                            // conventional centring of stem on fret marks
-        ypos  = _tab->durationGridYOffset();                // stem start is at bottom
-        if (chord->beamMode() == Beam::Mode::BEGIN) {
-            _beamGrid   = TabBeamGrid::INITIAL;
-            _beamLength = 0.0;
-        } else if (chord->beamMode() == Beam::Mode::MID || chord->beamMode() == Beam::Mode::END) {
-            _beamLevel  = static_cast<int>(chord->durationType().type()) - static_cast<int>(font.zeroBeamLevel);
-            _beamGrid   = (_beamLevel < 1 ? TabBeamGrid::INITIAL : TabBeamGrid::MEDIALFINAL);
-            // _beamLength and bbox x and width will be set in layout2(),
-            // once horiz. positions of chords are known
-        }
-    }
-    // set this' mag from parent chord mag (include staff mag)
-    qreal mag = chord != nullptr ? chord->mag() : 1.0;
-    setMag(mag);
-    mag = magS();             // local mag * score mag
-    // set magnified bbox and position
-    bbox().setRect(xbb * mag, ybb * mag, wbb * mag, hbb * mag);
-    setPos(xpos * mag, ypos * mag);
 }
 
 //---------------------------------------------------------

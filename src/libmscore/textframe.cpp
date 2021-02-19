@@ -57,32 +57,6 @@ TBox::~TBox()
 
 void TBox::layout()
 {
-    setPos(QPointF());        // !?
-    bbox().setRect(0.0, 0.0, system()->width(), 0);
-    _text->layout();
-
-    qreal h = 0.;
-    if (_text->empty()) {
-        QFontMetricsF fm = QFontMetricsF(_text->font(), MScore::paintDevice());
-        h = fm.ascent();
-    } else {
-        h = _text->height();
-    }
-    qreal y = topMargin() * DPMM;
-#if 0
-    if (_text->align() & Align::BOTTOM) {
-        y += h;
-    } else if (_text->align() & Align::VCENTER) {
-        y +=  h * .5;
-    } else {
-        // y = 0;
-    }
-#endif
-    _text->setPos(leftMargin() * DPMM, y);
-    h += topMargin() * DPMM + bottomMargin() * DPMM;
-    bbox().setRect(0.0, 0.0, system()->width(), h);
-
-    MeasureBase::layout();    // layout LayoutBreak's
 }
 
 //---------------------------------------------------------

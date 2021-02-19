@@ -80,60 +80,6 @@ void GlissandoSegment::layout()
 
 void GlissandoSegment::draw(QPainter* painter) const
 {
-    painter->save();
-    qreal _spatium = spatium();
-
-    QPen pen(curColor(visible(), glissando()->lineColor()));
-    pen.setWidthF(glissando()->lineWidth());
-    pen.setCapStyle(Qt::RoundCap);
-    painter->setPen(pen);
-
-    // rotate painter so that the line become horizontal
-    qreal w     = pos2().x();
-    qreal h     = pos2().y();
-    qreal l     = sqrt(w * w + h * h);
-    qreal wi    = asin(-h / l) * 180.0 / M_PI;
-    qreal scale = painter->worldTransform().m11();
-    painter->rotate(-wi);
-
-    if (glissando()->glissandoType() == GlissandoType::STRAIGHT) {
-        painter->drawLine(QLineF(0.0, 0.0, l, 0.0));
-    } else if (glissando()->glissandoType() == GlissandoType::WAVY) {
-        QRectF b = symBbox(SymId::wiggleTrill);
-        qreal a  = symAdvance(SymId::wiggleTrill);
-        int n    = static_cast<int>(l / a);          // always round down (truncate) to avoid overlap
-        qreal x  = (l - n * a) * 0.5;     // centre line in available space
-        std::vector<SymId> ids;
-        for (int i = 0; i < n; ++i) {
-            ids.push_back(SymId::wiggleTrill);
-        }
-        // this is very ugly but fix #68846 for now
-        bool tmp = MScore::pdfPrinting;
-        MScore::pdfPrinting = true;
-        score()->scoreFont()->draw(ids, painter, magS(), QPointF(x, -(b.y() + b.height() * 0.5)), scale);
-        MScore::pdfPrinting = tmp;
-    }
-
-    if (glissando()->showText()) {
-        QFont f(glissando()->fontFace());
-        f.setPointSizeF(glissando()->fontSize() * MScore::pixelRatio* _spatium / SPATIUM20);
-        f.setBold(glissando()->fontStyle() & FontStyle::Bold);
-        f.setItalic(glissando()->fontStyle() & FontStyle::Italic);
-        f.setUnderline(glissando()->fontStyle() & FontStyle::Underline);
-        QFontMetricsF fm(f, painter->device());     // use the QPaintDevice, otherwise calculations will be done in screen metrics
-        QRectF r = fm.boundingRect(glissando()->text());
-
-        // if text longer than available space, skip it
-        if (r.width() < l) {
-            qreal yOffset = r.height() + r.y();             // find text descender height
-            // raise text slightly above line and slightly more with WAVY than with STRAIGHT
-            yOffset += _spatium * (glissando()->glissandoType() == GlissandoType::WAVY ? 0.4 : 0.1);
-            painter->setFont(f);
-            qreal x = (l - r.width()) * 0.5;
-            painter->drawText(QPointF(x, -yOffset), glissando()->text());
-        }
-    }
-    painter->restore();
 }
 
 //---------------------------------------------------------

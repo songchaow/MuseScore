@@ -4747,16 +4747,18 @@ void Score::layoutSystemElements(System* system, LayoutContext& lc)
     // Lyric
     //-------------------------------------------------------------
 
-    layoutLyrics(system);
+    //layoutLyrics(system);
 
     // here are lyrics dashes and melisma
+    /*
     for (Spanner* sp : _unmanagedSpanner) {
         if (sp->tick() >= etick || sp->tick2() <= stick) {
             continue;
         }
         sp->layoutSystem(system);
     }
-
+    */
+   
     //
     // We need to known if we have FretDiagrams in the system to decide when to layout the Harmonies
     //

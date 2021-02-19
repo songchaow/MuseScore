@@ -255,15 +255,7 @@ void TextCursor::updateCursorFormat()
 
 QRectF TextCursor::cursorRect() const
 {
-    const TextBlock& tline       = curLine();
-    const TextFragment* fragment = tline.fragment(column());
-
-    QFont _font  = fragment ? fragment->font(_text) : _text->font();
-    qreal ascent = QFontMetricsF(_font, MScore::paintDevice()).ascent();
-    qreal h = ascent;
-    qreal x = tline.xpos(column(), _text);
-    qreal y = tline.y() - ascent * .9;
-    return QRectF(x, y, 4.0, h);
+    return QRectF(0.0, 0.0, 4.0, 1.0);
 }
 
 //---------------------------------------------------------
@@ -1070,111 +1062,7 @@ void TextBlock::draw(QPainter* p, const TextBase* t) const
 
 void TextBlock::layout(TextBase* t)
 {
-    _bbox        = QRectF();
-    qreal x      = 0.0;
-    _lineSpacing = 0.0;
-    qreal lm     = 0.0;
-
-    qreal layoutWidth = 0;
-    Element* e = t->parent();
-    if (e && t->layoutToParentWidth()) {
-        layoutWidth = e->width();
-        switch (e->type()) {
-        case ElementType::HBOX:
-        case ElementType::VBOX:
-        case ElementType::TBOX: {
-            Box* b = toBox(e);
-            layoutWidth -= ((b->leftMargin() + b->rightMargin()) * DPMM);
-            lm = b->leftMargin() * DPMM;
-        }
-        break;
-        case ElementType::PAGE: {
-            Page* p = toPage(e);
-            layoutWidth -= (p->lm() + p->rm());
-            lm = p->lm();
-        }
-        break;
-        case ElementType::MEASURE: {
-            Measure* m = toMeasure(e);
-            layoutWidth = m->bbox().width();
-        }
-        break;
-        default:
-            break;
-        }
-    }
-
-    if (_fragments.empty()) {
-        QFontMetricsF fm = t->fontMetrics();
-        _bbox.setRect(0.0, -fm.ascent(), 1.0, fm.descent());
-        _lineSpacing = fm.lineSpacing();
-    } else if (_fragments.size() == 1 && _fragments.at(0).text.isEmpty()) {
-        auto fi = _fragments.begin();
-        TextFragment& f = *fi;
-        f.pos.setX(x);
-        QFontMetricsF fm(f.font(t), MScore::paintDevice());
-        if (f.format.valign() != VerticalAlignment::AlignNormal) {
-            qreal voffset = fm.xHeight() / subScriptSize;   // use original height
-            if (f.format.valign() == VerticalAlignment::AlignSubScript) {
-                voffset *= subScriptOffset;
-            } else {
-                voffset *= superScriptOffset;
-            }
-
-            f.pos.setY(voffset);
-        } else {
-            f.pos.setY(0.0);
-        }
-
-        QRectF temp(0.0, -fm.ascent(), 1.0, fm.descent());
-        _bbox |= temp;
-        _lineSpacing = qMax(_lineSpacing, fm.lineSpacing());
-    } else {
-        const auto fiLast = --_fragments.end();
-        for (auto fi = _fragments.begin(); fi != _fragments.end(); ++fi) {
-            TextFragment& f = *fi;
-            f.pos.setX(x);
-            QFontMetricsF fm(f.font(t), MScore::paintDevice());
-            if (f.format.valign() != VerticalAlignment::AlignNormal) {
-                qreal voffset = fm.xHeight() / subScriptSize;           // use original height
-                if (f.format.valign() == VerticalAlignment::AlignSubScript) {
-                    voffset *= subScriptOffset;
-                } else {
-                    voffset *= superScriptOffset;
-                }
-                f.pos.setY(voffset);
-            } else {
-                f.pos.setY(0.0);
-            }
-
-            // Optimization: don't calculate character position
-            // for the next fragment if there is no next fragment
-            if (fi != fiLast) {
-                const qreal w  = fm.width(f.text);
-                x += w;
-            }
-
-            _bbox   |= fm.tightBoundingRect(f.text).translated(f.pos);
-            _lineSpacing = qMax(_lineSpacing, fm.lineSpacing());
-        }
-    }
-
-    // Apply style/custom line spacing
-    _lineSpacing *= t->textLineSpacing();
-
-    qreal rx;
-    if (t->align() & Align::RIGHT) {
-        rx = layoutWidth - _bbox.right();
-    } else if (t->align() & Align::HCENTER) {
-        rx = (layoutWidth - (_bbox.left() + _bbox.right())) * .5;
-    } else { // Align::LEFT
-        rx = -_bbox.left();
-    }
-    rx += lm;
-    for (TextFragment& f : _fragments) {
-        f.pos.rx() += rx;
-    }
-    _bbox.translate(rx, 0.0);
+    return;
 }
 
 //---------------------------------------------------------
@@ -1201,25 +1089,7 @@ QList<TextFragment>* TextBlock::fragmentsWithoutEmpty()
 
 qreal TextBlock::xpos(int column, const TextBase* t) const
 {
-    int col = 0;
-    for (const TextFragment& f : _fragments) {
-        if (column == col) {
-            return f.pos.x();
-        }
-        QFontMetricsF fm(f.font(t), MScore::paintDevice());
-        int idx = 0;
-        for (const QChar& c : qAsConst(f.text)) {
-            ++idx;
-            if (c.isHighSurrogate()) {
-                continue;
-            }
-            ++col;
-            if (column == col) {
-                return f.pos.x() + fm.width(f.text.left(idx));
-            }
-        }
-    }
-    return _bbox.x();
+    return 1.f;
 }
 
 //---------------------------------------------------------
@@ -1300,26 +1170,6 @@ int TextBlock::columns() const
 int TextBlock::column(qreal x, TextBase* t) const
 {
     int col = 0;
-    for (const TextFragment& f : _fragments) {
-        int idx = 0;
-        if (x <= f.pos.x()) {
-            return col;
-        }
-        qreal px = 0.0;
-        for (const QChar& c : qAsConst(f.text)) {
-            ++idx;
-            if (c.isHighSurrogate()) {
-                continue;
-            }
-            QFontMetricsF fm(f.font(t), MScore::paintDevice());
-            qreal xo = fm.width(f.text.left(idx));
-            if (x <= f.pos.x() + px + (xo - px) * .5) {
-                return col;
-            }
-            ++col;
-            px = xo;
-        }
-    }
     return col;
 }
 
@@ -2064,48 +1914,6 @@ void TextBase::layout1()
 
 void TextBase::layoutFrame()
 {
-//      if (empty()) {    // or bbox.width() <= 1.0
-    if (bbox().width() <= 1.0 || bbox().height() < 1.0) {      // or bbox.width() <= 1.0
-        // this does not work for Harmony:
-        QFontMetricsF fm = QFontMetricsF(font(), MScore::paintDevice());
-        qreal ch = fm.ascent();
-        qreal cw = fm.width('n');
-        frame = QRectF(0.0, -ch, cw, ch);
-    } else {
-        frame = bbox();
-    }
-
-    if (square()) {
-#if 0
-        // "real" square
-        if (frame.width() > frame.height()) {
-            qreal w = frame.width() - frame.height();
-            frame.adjust(0.0, -w * .5, 0.0, w * .5);
-        } else {
-            qreal w = frame.height() - frame.width();
-            frame.adjust(-w * .5, 0.0, w * .5, 0.0);
-        }
-#else
-        // make sure width >= height
-        if (frame.height() > frame.width()) {
-            qreal w = frame.height() - frame.width();
-            frame.adjust(-w * .5, 0.0, w * .5, 0.0);
-        }
-#endif
-    } else if (circle()) {
-        if (frame.width() > frame.height()) {
-            frame.setY(frame.y() + (frame.width() - frame.height()) * -.5);
-            frame.setHeight(frame.width());
-        } else {
-            frame.setX(frame.x() + (frame.height() - frame.width()) * -.5);
-            frame.setWidth(frame.height());
-        }
-    }
-    qreal _spatium = spatium();
-    qreal w = (paddingWidth() + frameWidth() * .5f).val() * _spatium;
-    frame.adjust(-w, -w, w, w);
-    w = frameWidth().val() * _spatium;
-    setbbox(frame.adjusted(-w, -w, w, w));
 }
 
 //---------------------------------------------------------
@@ -2114,7 +1922,7 @@ void TextBase::layoutFrame()
 
 qreal TextBase::lineSpacing() const
 {
-    return fontMetrics().lineSpacing() * MScore::pixelRatio;
+    return 1.f;
 }
 
 //---------------------------------------------------------
@@ -2123,7 +1931,7 @@ qreal TextBase::lineSpacing() const
 
 qreal TextBase::lineHeight() const
 {
-    return fontMetrics().height();
+    return 1.f;
 }
 
 //---------------------------------------------------------
@@ -2132,7 +1940,7 @@ qreal TextBase::lineHeight() const
 
 qreal TextBase::baseLine() const
 {
-    return fontMetrics().ascent();
+    return 1.f;
 }
 
 FontStyle TextBase::fontStyle() const
@@ -2681,74 +2489,7 @@ QString TextBase::xmlText() const
 
 QString TextBase::convertFromHtml(const QString& ss) const
 {
-    QTextDocument doc;
-    doc.setHtml(ss);
-
-    QString s;
-    qreal size_ = size();
-    QString family_ = family();
-    for (auto b = doc.firstBlock(); b.isValid(); b = b.next()) {
-        if (!s.isEmpty()) {
-            s += "\n";
-        }
-        for (auto it = b.begin(); !it.atEnd(); ++it) {
-            QTextFragment f = it.fragment();
-            if (f.isValid()) {
-                QTextCharFormat tf = f.charFormat();
-                QFont font = tf.font();
-                qreal htmlSize = font.pointSizeF();
-                // html font sizes may have spatium adjustments; need to undo this
-                if (sizeIsSpatiumDependent()) {
-                    htmlSize *= SPATIUM20 / spatium();
-                }
-                if (fabs(size_ - htmlSize) > 0.1) {
-                    size_ = htmlSize;
-                    s += QString("<font size=\"%1\"/>").arg(size_);
-                }
-                if (family_ != font.family()) {
-                    family_ = font.family();
-                    s += QString("<font face=\"%1\"/>").arg(family_);
-                }
-                if (font.bold()) {
-                    s += "<b>";
-                }
-                if (font.italic()) {
-                    s += "<i>";
-                }
-                if (font.underline()) {
-                    s += "<u>";
-                }
-                s += f.text().toHtmlEscaped();
-                if (font.underline()) {
-                    s += "</u>";
-                }
-                if (font.italic()) {
-                    s += "</i>";
-                }
-                if (font.bold()) {
-                    s += "</b>";
-                }
-            }
-        }
-    }
-
-    if (score() && score()->mscVersion() <= 114) {
-        s.replace(QChar(0xe10e), QString("<sym>accidentalNatural</sym>"));      //natural
-        s.replace(QChar(0xe10c), QString("<sym>accidentalSharp</sym>"));        // sharp
-        s.replace(QChar(0xe10d), QString("<sym>accidentalFlat</sym>"));         // flat
-        s.replace(QChar(0xe104), QString("<sym>metNoteHalfUp</sym>")),          // note2_Sym
-        s.replace(QChar(0xe105), QString("<sym>metNoteQuarterUp</sym>"));       // note4_Sym
-        s.replace(QChar(0xe106), QString("<sym>metNote8thUp</sym>"));           // note8_Sym
-        s.replace(QChar(0xe107), QString("<sym>metNote16thUp</sym>"));          // note16_Sym
-        s.replace(QChar(0xe108), QString("<sym>metNote32ndUp</sym>"));          // note32_Sym
-        s.replace(QChar(0xe109), QString("<sym>metNote64thUp</sym>"));          // note64_Sym
-        s.replace(QChar(0xe10a), QString("<sym>metAugmentationDot</sym>"));     // dot
-        s.replace(QChar(0xe10b), QString("<sym>metAugmentationDot</sym><sym>space</sym><sym>metAugmentationDot</sym>"));        // dotdot
-        s.replace(QChar(0xe167), QString("<sym>segno</sym>"));                  // segno
-        s.replace(QChar(0xe168), QString("<sym>coda</sym>"));                   // coda
-        s.replace(QChar(0xe169), QString("<sym>codaSquare</sym>"));             // varcoda
-    }
-    return s;
+    return "Not Implemented.";
 }
 
 //---------------------------------------------------------

@@ -265,15 +265,6 @@ void FSymbol::read(XmlReader& e)
 
 void FSymbol::layout()
 {
-    QString s;
-    if (_code & 0xffff0000) {
-        s = QChar(QChar::highSurrogate(_code));
-        s += QChar(QChar::lowSurrogate(_code));
-    } else {
-        s = QChar(_code);
-    }
-    QFontMetricsF fm(_font, MScore::paintDevice());
-    setbbox(fm.boundingRect(s));
 }
 
 //---------------------------------------------------------
