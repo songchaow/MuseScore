@@ -438,13 +438,19 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
             }
             if(timesig) {
                 currTimeSig = timesig->sig();
+                // add to each track
                 for(museprotocol::Track* t : track_ptrs) {
                     museprotocol::TimeSig* timesig = t->add_timesigs();
                     timesig->set_numerator(currTimeSig.numerator());
                     timesig->set_denominator(currTimeSig.denominator());
                     timesig->set_startnoteidx(t->notes_size());
                 }
+                museprotocol::TimeSig* timesig = score.add_timesigs();
+                timesig->set_numerator(currTimeSig.numerator());
+                timesig->set_denominator(currTimeSig.denominator());
+                timesig->set_pbar(measureIdx);
             }
+            
         }
 
         

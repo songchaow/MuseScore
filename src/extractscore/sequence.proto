@@ -102,7 +102,9 @@ message TrackNote {
 message TimeSig {
     uint32 numerator = 1;
     uint32 denominator = 2;
-    uint32 startNoteIdx = 3;
+    uint32 startNoteIdx = 3;    // available in Track
+    uint32 pBar = 4;            // available in Score
+    // uint32 pOffset = 5;         // needed?
 }
 
 message Track {
@@ -188,7 +190,16 @@ message Segment {
     int32 speed = 7;
 }
 
+message ChordSymbol {
+    uint32 position = 1;
+    uint32 pBar = 2;
+    uint32 pOffset = 3;
+    string symbol = 4;
+}
+
 message Score {
     repeated Segment segs = 1;
     repeated Track tracks = 2;
+    repeated ChordSymbol chordsymbols = 3;
+    repeated TimeSig timesigs = 4;
 }
