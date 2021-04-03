@@ -150,6 +150,14 @@ message Track {
     repeated TimeSig timesigs = 5;
 }
 
+// A global positional symbol
+message KPS {
+    uint32 pBar = 1;
+    uint32 pOffset = 2;
+    uint32 globalOffset  = 3;
+    bool isStart = 4;
+}
+
 message Segment {
     uint32 pBar = 1;
     uint32 pOffset = 2;
@@ -191,14 +199,14 @@ message Segment {
 }
 
 message ChordSymbol {
-    uint32 position = 1;
+    uint32 position = 1; // global position (num of steps, 8 steps = one quarter)
     uint32 pBar = 2;
     uint32 pOffset = 3;
     string symbol = 4;
 }
 
 message Score {
-    repeated Segment segs = 1;
+    repeated Segment segs = 1; // not used now. (and not filled either)
     repeated Track tracks = 2;
     repeated ChordSymbol chordsymbols = 3;
     repeated TimeSig timesigs = 4;
