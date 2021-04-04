@@ -107,6 +107,7 @@ message TimeSig {
     // uint32 pOffset = 5;         // needed?
 }
 
+
 message Track {
     enum Instrument {
         // Wooodwinds
@@ -155,7 +156,16 @@ message KPS {
     uint32 pBar = 1;
     uint32 pOffset = 2;
     uint32 globalOffset  = 3;
-    bool isStart = 4;
+    bool isStart = 4; // i.e., weak beat, before
+}
+
+message NoteorKPS {
+    Note note = 1;
+    KPS kps = 2;
+}
+// new sequence
+message NoteSeq {
+    repeated NoteorKPS token = 1;
 }
 
 message Segment {
@@ -192,6 +202,7 @@ message Segment {
         DimLarge = 4;
     }
     repeated Note note = 3;
+    repeated NoteSeq noteseq = 8;
     ChordBase cb = 4;
     ChordSubType ctype = 5;
     VolumeChange volchange = 6;
