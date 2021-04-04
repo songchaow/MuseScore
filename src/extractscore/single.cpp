@@ -477,7 +477,7 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                 }
                 // calc poffset in bar
                 Fraction ratioTick = s->rtick();
-                Fraction offsetBar = ratioTick * 32;
+                Fraction offsetBar = ratioTick * 8 * currTimeSig.numerator();
                 int offsetBarInt = offsetBar.numerator() / offsetBar.denominator();
                 // add notes
                 for (int i = 0; i < elements.size(); i++) {
