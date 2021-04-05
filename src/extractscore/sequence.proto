@@ -3,7 +3,7 @@ package museprotocol;
 
 message Note {
     uint32 pitch = 1;
-    uint32 duration = 2;
+    uint32 duration = 2; // a quarter note: ticks, usually 
     enum Instrument {
         // Wooodwinds
         Flute = 0; // Alternative: Piccolo

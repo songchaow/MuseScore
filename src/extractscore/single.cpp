@@ -5,6 +5,7 @@
 #include "libmscore/musescoreCore.h"
 #include "libmscore/trill.h"
 #include "libmscore/tie.h"
+#include "libmscore/instrtemplate.h"
 #include "framework/fonts/fontsmodule.h"
 #include "framework/midi_old/exportmidi.h"
 #include "utils.h"
@@ -477,7 +478,7 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                 }
                 // calc poffset in bar
                 Fraction ratioTick = s->rtick();
-                Fraction offsetBar = ratioTick * 8 * currTimeSig.numerator();
+                Fraction offsetBar = ratioTick * 4 * 8;
                 int offsetBarInt = offsetBar.numerator() / offsetBar.denominator();
                 // add notes
                 for (int i = 0; i < elements.size(); i++) {
@@ -526,7 +527,8 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                             if (!duration.isNotZero())
                                 continue;
                             museprotocol::TrackNote* note_proto = track_ptrs[trackIdx]->add_notes();
-                            note_proto->set_duration(duration.ticks());
+                            //note_proto->set_duration(duration.ticks()); // old duration
+                            note_proto->set_duration(duration.numerator()*4*8/duration.denominator());
                             note_proto->set_pitch(n->pitch()); // 0-127
                             note_proto->set_vol(static_cast<museprotocol::TrackNote::Volume>(vol_enum));
                             note_proto->set_volval(vol_val);
@@ -626,6 +628,7 @@ int main(int argc, char* argv[]) {
     fontmodule.registerResources();
 
     MScore::init();
+    loadInstrumentTemplates("/home/songchaow/Codes/MuseInstall/share/mscore-4.0/instruments/instruments.xml");
 
         //std::string score_path = p.path().generic_string();
         int result = processSingleMscz(score_path, output_path, mscoreGlobal, midi_path);
