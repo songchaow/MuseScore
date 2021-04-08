@@ -97,6 +97,7 @@ message TrackNote {
     }
     Volume vol = 5;
     uint32 volval = 6;
+    uint32 pGlobalOffset = 7;
 }
 
 message TimeSig {
@@ -147,6 +148,7 @@ message Track {
     Instrument instrument = 1;
     string instrumentName = 2;
     repeated TrackNote notes = 3;
+    NoteSeq noteseq = 6;
     uint32 midiprogram = 4;
     repeated TimeSig timesigs = 5;
 }
@@ -160,7 +162,7 @@ message KPS {
 }
 
 message NoteorKPS {
-    Note note = 1;
+    TrackNote note = 1;
     KPS kps = 2;
 }
 // new sequence
@@ -202,7 +204,7 @@ message Segment {
         DimLarge = 4;
     }
     repeated Note note = 3;
-    repeated NoteSeq noteseq = 8;
+    // repeated NoteSeq noteseq = 8;
     ChordBase cb = 4;
     ChordSubType ctype = 5;
     VolumeChange volchange = 6;

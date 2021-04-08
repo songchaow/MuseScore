@@ -21,6 +21,7 @@
 #include <fstream>
 #include <filesystem>
 #include <stdexcept>
+#include <csignal>
 
 #include <QDebug>
 
@@ -419,6 +420,10 @@ void extractSegments(Ms::Score* currscore, museprotocol::Score& score) {
         }
 }
 
+inline int fraction_to_my_quantized_steps(const Fraction& f) {
+    return f.numerator() * 4 * 8 / f.denominator();
+}
+
 void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
     Ms::Measure* m = currscore->firstMeasure();
     Fraction currTimeSig = Fraction(4,4); // same for at least one measure
@@ -478,8 +483,15 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                 }
                 // calc poffset in bar
                 Fraction ratioTick = s->rtick();
+                // fix negative numerator
+                ratioTick.set(std::max(ratioTick.numerator(), 0), std::abs(ratioTick.denominator()));
                 Fraction offsetBar = ratioTick * 4 * 8;
                 int offsetBarInt = offsetBar.numerator() / offsetBar.denominator();
+                #ifndef NDEBUG
+                if (offsetBarInt < 0)
+                    std::raise(SIGINT);
+                #endif
+                int globalOffset = fraction_to_my_quantized_steps(s->tick());
                 // add notes
                 for (int i = 0; i < elements.size(); i++) {
                     int trackIdx = i / VOICES;
@@ -534,6 +546,7 @@ void extractTracks(Ms::Score* currscore, museprotocol::Score& score) {
                             note_proto->set_volval(vol_val);
                             note_proto->set_pbar(measureIdx);
                             note_proto->set_poffset(offsetBarInt);
+                            note_proto->set_pglobaloffset(globalOffset);
                         }
                     }
                 }

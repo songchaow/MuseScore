@@ -3,7 +3,7 @@ set(EXTRACT_EXE_SRC main.cpp utils.cpp utils.h)
 set(SINGLE_EXE_NAME single)
 set(SINGLE_EXE_SRC single.cpp utils.cpp utils.h)
 
-add_compile_definitions(QT_NO_DEBUG_OUTPUT NDEBUG)
+# add_compile_definitions(QT_NO_DEBUG_OUTPUT NDEBUG)
 # protobuf generation
 set(PROTOBUF_OUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 file(GLOB PROTOBUF_DEFINITION_FILES "*.proto")
