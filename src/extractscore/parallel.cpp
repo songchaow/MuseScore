@@ -81,7 +81,7 @@ void runJob(FileStatusRecord* record) {
         // execute
         
         std::string score_path = score_dir_path+'/'+chosen.first;
-        std::string cmd = "./";
+        std::string cmd = "";
         cmd += program_name + ' ';
         cmd += '\"' + score_path + '\"' + ' ';
         cmd += '\"' + output_path + '\"';

@@ -641,8 +641,11 @@ int main(int argc, char* argv[]) {
     fontmodule.registerResources();
 
     MScore::init();
-    loadInstrumentTemplates("/home/songchaow/Codes/MuseInstall/share/mscore-4.0/instruments/instruments.xml");
-
+    // loadInstrumentTemplates("/home/songchaow/Codes/MuseInstall/share/mscore-4.0/instruments/instruments.xml");
+    if(!loadInstrumentTemplates("../share/mscore-4.0/instruments/instruments.xml")) {
+        std::cerr << "Load template failed";
+    }
+    
         //std::string score_path = p.path().generic_string();
         int result = processSingleMscz(score_path, output_path, mscoreGlobal, midi_path);
         
