@@ -22,7 +22,7 @@ if (NOT MUE_BUILD_ACCESSIBILITY_MODULE)
     add_subdirectory(accessibility)
 endif()
 
-if (NOT MUE_BUILD_AUDIO_MODULE)
+if (NOT MUE_BUILD_AUDIO_MODULE AND NOT NO_QT_SUPPORT)
     add_subdirectory(audio)
 endif()
 
@@ -34,14 +34,14 @@ if (NOT MUE_BUILD_MPE_MODULE)
     add_subdirectory(mpe)
 endif()
 
-if (NOT MUE_BUILD_NETWORK_MODULE)
+if (NOT MUE_BUILD_NETWORK_MODULE AND NOT NO_QT_SUPPORT)
     add_subdirectory(network)
 endif()
 
-if (NOT MUE_BUILD_SHORTCUTS_MODULE)
+if (NOT MUE_BUILD_SHORTCUTS_MODULE AND NOT NO_QT_SUPPORT)
     add_subdirectory(shortcuts)
 endif()
 
-if (NOT MUE_BUILD_VST_MODULE)
+if (NOT MUE_BUILD_VST_MODULE AND NOT NO_QT_SUPPORT)
     add_subdirectory(vst)
 endif()

@@ -189,7 +189,7 @@ endif()
 # Subsystem
 ###########################################
 
-set(QT_SUPPORT ON)
+set(QT_SUPPORT OFF)
 
 if (NOT MUE_BUILD_AUDIO_MODULE)
     set(MUE_BUILD_MUSESAMPLER_MODULE OFF)

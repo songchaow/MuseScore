@@ -375,7 +375,9 @@ struct Event {
                 return ((m_data[0] & 0x7F) << 7) | ((m_data[0] & 0x7F00) >> 8);
             default: assert(false);
             }
+#ifndef NO_QT_SUPPORT
             Q_FALLTHROUGH();
+#endif
         case MessageType::ChannelVoice20:
             switch (opcode()) {
             case Opcode::PolyPressure:
@@ -392,7 +394,9 @@ struct Event {
                 return m_data[1];
             default: assert(false);
             }
+#ifndef NO_QT_SUPPORT
             Q_FALLTHROUGH();
+#endif
         default:;     //TODO
         }
 

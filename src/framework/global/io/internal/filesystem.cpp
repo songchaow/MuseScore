@@ -21,9 +21,11 @@
  */
 #include "filesystem.h"
 
+#ifndef NO_QT_SUPPORT
 #include <QFileInfo>
 #include <QDir>
 #include <QDirIterator>
+#endif
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -34,6 +36,8 @@
 
 using namespace mu;
 using namespace mu::io;
+
+#ifndef NO_QT_SUPPORT
 
 Ret FileSystem::exists(const io::path_t& path) const
 {
@@ -425,3 +429,137 @@ Ret FileSystem::isWritable(const io::path_t& filePath) const
 
     return ret;
 }
+
+#else
+
+// the following are FileSystem implementations without qt support
+
+//TODO: implementation
+
+Ret FileSystem::exists(const io::path_t& path) const
+{
+    return make_ret(Err::NoError);
+}
+
+Ret FileSystem::remove(const io::path_t& path_, bool onlyIfEmpty)
+{
+    return make_ret(Err::NoError);
+}
+
+Ret FileSystem::clear(const io::path_t& path_)
+{
+    return make_ret(Err::NoError);
+}
+
+Ret FileSystem::copy(const io::path_t& src, const io::path_t& dst, bool replace)
+{
+    return make_ret(Err::NoError);
+}
+
+Ret FileSystem::move(const io::path_t& src, const io::path_t& dst, bool replace)
+{
+    return make_ret(Err::NoError);
+}
+
+RetVal<ByteArray> FileSystem::readFile(const io::path_t& filePath) const
+{
+    RetVal<ByteArray> result;
+    result.ret = make_ret(Err::NoError);
+    return result;
+
+}
+
+Ret FileSystem::readFile(const io::path_t& filePath, ByteArray& data) const
+{
+    Ret ret = make_ok();
+    return ret;
+}
+
+Ret FileSystem::writeFile(const io::path_t& filePath, const ByteArray& data) const
+{
+    Ret ret = make_ok();
+    return ret;
+}
+
+Ret FileSystem::makePath(const io::path_t& path) const
+{
+     Ret ret = make_ok();
+    return ret;
+}
+
+EntryType FileSystem::entryType(const io::path_t& path) const
+{
+    return EntryType::File;
+}
+
+RetVal<uint64_t> FileSystem::fileSize(const io::path_t& path) const
+{
+    RetVal<uint64_t> rv;
+    rv.val = uint64_t(0);
+    return rv;
+}
+
+RetVal<io::paths_t> FileSystem::scanFiles(const io::path_t& rootDir, const std::vector<std::string>& nameFilters, ScanMode mode) const
+{
+    RetVal<io::paths_t> result;
+    result.ret = make_ret(Err::NoError);
+    return result;
+}
+
+Ret FileSystem::removeFile(const io::path_t& path) const
+{
+    return make_ret(Err::NoError);
+}
+
+Ret FileSystem::removeDir(const io::path_t& path, bool onlyIfEmpty) const
+{
+    return make_ret(Err::NoError);
+}
+
+Ret FileSystem::copyRecursively(const io::path_t& src, const io::path_t& dst) const
+{
+    return make_ret(Err::NoError);
+}
+
+void FileSystem::setAttribute(const io::path_t& path, Attribute attribute) const
+{
+    return;
+}
+
+bool FileSystem::setPermissionsAllowedForAll(const io::path_t& path) const
+{
+    return true;
+}
+
+io::path_t FileSystem::canonicalFilePath(const io::path_t& filePath) const
+{
+    return io::path_t();
+}
+
+io::path_t FileSystem::absolutePath(const io::path_t& filePath) const
+{
+    return io::path_t();
+}
+
+path_t FileSystem::absoluteFilePath(const path_t& filePath) const
+{
+    return io::path_t();
+}
+
+DateTime FileSystem::birthTime(const io::path_t& filePath) const
+{
+    return DateTime();
+}
+
+DateTime FileSystem::lastModified(const io::path_t& filePath) const
+{
+    return DateTime();
+}
+
+Ret FileSystem::isWritable(const io::path_t& filePath) const
+{
+    Ret ret = make_ok();
+    return ret;
+}
+
+#endif //NO_QT_SUPPORT

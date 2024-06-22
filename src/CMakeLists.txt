@@ -19,7 +19,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # App (main)
-add_subdirectory(app)
+# add_subdirectory(app)
 
 # Framework
 add_subdirectory(framework)
@@ -41,8 +41,10 @@ if (MUE_BUILD_CLOUD_MODULE)
     add_subdirectory(cloud)
 endif()
 
-add_subdirectory(commonscene)
-add_subdirectory(context)
+if (NOT NO_QT_SUPPORT)
+    add_subdirectory(commonscene)
+    add_subdirectory(context)
+endif()
 
 if (MUE_BUILD_CONVERTER_MODULE)
     add_subdirectory(converter)
@@ -92,7 +94,9 @@ if (MUE_BUILD_PLUGINS_MODULE)
     add_subdirectory(plugins)
 endif()
 
-add_subdirectory(print)
+if (NOT NO_QT_SUPPORT)
+    add_subdirectory(print)
+endif()
 
 if (MUE_BUILD_PROJECT_MODULE)
     add_subdirectory(project)
@@ -107,7 +111,9 @@ if (MUE_BUILD_WORKSPACE_MODULE)
 endif()
 
 # Stubs
-add_subdirectory(stubs)
+if (NOT NO_QT_SUPPORT)
+    add_subdirectory(stubs)
+endif()
 
 if (OS_IS_WASM)
     add_subdirectory(wasmtest)

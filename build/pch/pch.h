@@ -60,6 +60,7 @@ See https://github.com/musescore/musescore_devtools/tree/main/include-what-you-u
 #include <array> //25
 #include <errno.h> //20
 
+#ifndef NO_QT_SUPPORT
 // Qt includes
 #include <QString> //771
 #include <QList> //465
@@ -105,5 +106,7 @@ See https://github.com/musescore/musescore_devtools/tree/main/include-what-you-u
 #include <QPushButton> //22
 #include <QPixmap> //22
 #include <QXmlStreamAttributes> //22
+
+#endif
 
 #endif //MU_PCH_H

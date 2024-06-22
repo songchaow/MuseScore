@@ -22,14 +22,19 @@ if (MUE_BUILD_ACCESSIBILITY_MODULE)
     add_subdirectory(accessibility)
 endif()
 
-add_subdirectory(actions)
+if (NOT NO_QT_SUPPORT)
+    add_subdirectory(actions)
+endif()
 
 if (MUE_BUILD_AUDIO_MODULE)
     add_subdirectory(audio)
-endif ()
+endif()
 
 add_subdirectory(draw)
-add_subdirectory(fonts)
+
+if (NOT NO_QT_SUPPORT)
+    add_subdirectory(fonts)
+endif()
 
 if (MUE_BUILD_MIDI_MODULE)
     add_subdirectory(midi)

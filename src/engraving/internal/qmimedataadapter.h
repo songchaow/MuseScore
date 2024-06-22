@@ -22,6 +22,9 @@
 #ifndef MU_ENGRAVING_QMIMEDATAADAPTER_H
 #define MU_ENGRAVING_QMIMEDATAADAPTER_H
 
+
+#ifndef NO_QT_SUPPORT //museportable: split qt codes
+
 #include "infrastructure/imimedata.h"
 
 class QMimeData;
@@ -44,5 +47,7 @@ private:
     const QMimeData* m_data = nullptr;
 };
 }
+
+#endif //museportable: split qt codes
 
 #endif // MU_ENGRAVING_QMIMEDATAADAPTER_H

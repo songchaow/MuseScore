@@ -139,7 +139,12 @@ if (NOT ${MODULE} MATCHES global)
     endif()
 endif()
 
-set(MODULE_LINK ${QT_LIBRARIES} ${MODULE_LINK})
+# museportable: split qt codes:[BEGIN]
+if (NOT NO_QT_SUPPORT)
+    set(MODULE_LINK ${QT_LIBRARIES} ${MODULE_LINK})
+endif()
+# museportable: split qt codes:[BEGIN]
+
 set(MODULE_LINK ${CMAKE_DL_LIBS} ${MODULE_LINK})
 
 target_link_libraries(${MODULE} PRIVATE ${MODULE_LINK} )

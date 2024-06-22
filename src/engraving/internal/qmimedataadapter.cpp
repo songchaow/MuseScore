@@ -21,6 +21,8 @@
  */
 #include "qmimedataadapter.h"
 
+#ifndef NO_QT_SUPPORT //museportable: split qt codes
+
 #include <QMimeData>
 
 #include "log.h"
@@ -76,3 +78,5 @@ std::shared_ptr<draw::Pixmap> QMimeDataAdapter::imageData() const
 {
     return pixmapFromQVariant(m_data->imageData());
 }
+
+#endif
