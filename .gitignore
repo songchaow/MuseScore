@@ -68,3 +68,7 @@ VERSION
 *.orig
 
 temp_*
+
+
+# museportable
+/museportable_build
