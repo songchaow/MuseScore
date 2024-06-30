@@ -118,6 +118,7 @@ class MasterScore : public Score
     friend class read114::Read114;
     friend class read400::Read400;
 
+public:
     MasterScore(std::weak_ptr<EngravingProject> project  = std::weak_ptr<EngravingProject>());
     MasterScore(const MStyle&, std::weak_ptr<EngravingProject> project  = std::weak_ptr<EngravingProject>());
 

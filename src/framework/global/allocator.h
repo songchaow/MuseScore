@@ -28,6 +28,9 @@
 #include <string>
 
 namespace mu {
+#ifdef USE_GODOT_ALLOCATOR
+    #define OBJECT_ALLOCATOR(Module, ClassName)
+#else
 #define OBJECT_ALLOCATOR(Module, ClassName) \
 public: \
     static ObjectAllocator& allocator() { \
@@ -58,6 +61,7 @@ public: \
         } \
     } \
 private:
+#endif
 
 class ObjectAllocator
 {
