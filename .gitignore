@@ -72,3 +72,16 @@ temp_*
 
 # museportable
 /museportable_build
+
+# C/C++ generated
+*.a
+*.ax
+*.d
+*.dll
+*.lib
+*.lo
+*.o
+*.os
+*.ox
+*.Plo
+*.so
