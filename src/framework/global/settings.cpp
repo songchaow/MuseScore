@@ -23,10 +23,17 @@
 #include "settings.h"
 #include "log.h"
 
+#ifndef NO_QT_SUPPORT
 #include <QDateTime>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QDir>
+#endif
+
+#include <fstream>
+#include <sstream>
+#include <map>
+#include <ctime>
 
 #include "multiinstances/resourcelockguard.h"
 
@@ -44,6 +51,7 @@ Settings* Settings::instance()
 
 Settings::Settings()
 {
+#ifndef NO_QT_SUPPORT
 #ifdef WIN_PORTABLE
     QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, dataPath());
     QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope, dataPath());
@@ -54,16 +62,25 @@ Settings::Settings()
 #endif
 
     m_settings = new QSettings();
+#else
+    m_settings = nullptr;
+#endif
 }
 
 Settings::~Settings()
 {
+#ifndef NO_QT_SUPPORT
     delete m_settings;
+#endif
 }
 
 io::path_t Settings::filePath() const
 {
+#ifndef NO_QT_SUPPORT
     return m_settings->fileName();
+#else
+    return dataPath().toStdString() + "/settings.ini";
+#endif
 }
 
 const Settings::Items& Settings::items() const
@@ -90,14 +107,22 @@ void Settings::load()
 
 void Settings::reset(bool keepDefaultSettings, bool notifyAboutChanges)
 {
+#ifndef NO_QT_SUPPORT
     m_settings->clear();
+#endif
 
     m_isTransactionStarted = false;
     m_localSettings.clear();
 
     if (!keepDefaultSettings) {
+#ifndef NO_QT_SUPPORT
         QDir(dataPath()).removeRecursively();
         QDir().mkpath(dataPath());
+#else
+        // For NO_QT_SUPPORT mode, just remove the settings file
+        std::string filepath = filePath().toStdString();
+        std::remove(filepath.c_str());
+#endif
     }
 
     if (!notifyAboutChanges) {
@@ -112,6 +137,7 @@ void Settings::reset(bool keepDefaultSettings, bool notifyAboutChanges)
     }
 }
 
+#ifndef NO_QT_SUPPORT
 static Val compat_QVariantToVal(const QVariant& var)
 {
     if (!var.isValid()) {
@@ -135,6 +161,7 @@ static Val compat_QVariantToVal(const QVariant& var)
 
     return Val::fromQVariant(var);
 }
+#endif
 
 Settings::Items Settings::readItems() const
 {
@@ -142,6 +169,7 @@ Settings::Items Settings::readItems() const
 
     mi::ReadResourceLockGuard resource_lock(multiInstancesProvider(), SETTINGS_RESOURCE_NAME);
 
+#ifndef NO_QT_SUPPORT
     for (const QString& key : m_settings->allKeys()) {
         Item item;
         item.key = Key(std::string(), key.toStdString());
@@ -149,6 +177,39 @@ Settings::Items Settings::readItems() const
 
         result[item.key] = item;
     }
+#else
+    // Simple INI-style file reading for NO_QT_SUPPORT mode
+    std::string filepath = filePath().toStdString();
+    std::ifstream file(filepath);
+    if (file.is_open()) {
+        std::string line;
+        while (std::getline(file, line)) {
+            // Skip empty lines and comments
+            if (line.empty() || line[0] == '#' || line[0] == ';') {
+                continue;
+            }
+            
+            // Parse key=value
+            size_t pos = line.find('=');
+            if (pos != std::string::npos) {
+                std::string key = line.substr(0, pos);
+                std::string value = line.substr(pos + 1);
+                
+                // Trim whitespace
+                key.erase(0, key.find_first_not_of(" \t"));
+                key.erase(key.find_last_not_of(" \t") + 1);
+                value.erase(0, value.find_first_not_of(" \t"));
+                value.erase(value.find_last_not_of(" \t") + 1);
+                
+                Item item;
+                item.key = Key(std::string(), key);
+                item.value = Val(value);
+                result[item.key] = item;
+            }
+        }
+        file.close();
+    }
+#endif
 
     return result;
 }
@@ -206,16 +267,70 @@ void Settings::writeValue(const Key& key, const Val& value)
 {
     mi::WriteResourceLockGuard resource_lock(multiInstancesProvider(), SETTINGS_RESOURCE_NAME);
 
+#ifndef NO_QT_SUPPORT
     // TODO: implement writing/reading first part of key (module name)
     m_settings->setValue(QString::fromStdString(key.key), value.toQVariant());
+#else
+    // Simple INI-style file writing for NO_QT_SUPPORT mode
+    std::string filepath = filePath().toStdString();
+    
+    // Read all existing items
+    std::map<std::string, std::string> items;
+    std::ifstream infile(filepath);
+    if (infile.is_open()) {
+        std::string line;
+        while (std::getline(infile, line)) {
+            if (line.empty() || line[0] == '#' || line[0] == ';') {
+                continue;
+            }
+            size_t pos = line.find('=');
+            if (pos != std::string::npos) {
+                std::string k = line.substr(0, pos);
+                std::string v = line.substr(pos + 1);
+                k.erase(0, k.find_first_not_of(" \t"));
+                k.erase(k.find_last_not_of(" \t") + 1);
+                v.erase(0, v.find_first_not_of(" \t"));
+                v.erase(v.find_last_not_of(" \t") + 1);
+                items[k] = v;
+            }
+        }
+        infile.close();
+    }
+    
+    // Update or add the new value
+    items[key.key] = value.toString();
+    
+    // Write all items back
+    std::ofstream outfile(filepath);
+    if (outfile.is_open()) {
+        for (const auto& pair : items) {
+            outfile << pair.first << "=" << pair.second << "\n";
+        }
+        outfile.close();
+    }
+#endif
 }
 
-QString Settings::dataPath() const
+String Settings::dataPath() const
 {
+#ifndef NO_QT_SUPPORT
 #ifdef WIN_PORTABLE
     return QDir::cleanPath(QString("%1/../../../Data/settings").arg(QCoreApplication::applicationDirPath()));
 #else
     return QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+#endif
+#else
+    // For NO_QT_SUPPORT mode, use a simple default path
+#ifdef WIN_PORTABLE
+    return String::fromStdString("./Data/settings");
+#else
+    // Use a simple default location
+    const char* home = std::getenv("HOME");
+    if (home) {
+        return String::fromStdString(std::string(home) + "/.musescore");
+    }
+    return String::fromStdString("./settings");
+#endif
 #endif
 }
 

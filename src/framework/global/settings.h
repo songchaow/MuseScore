@@ -123,7 +123,11 @@ private:
 
     String dataPath() const;
 
+#ifndef NO_QT_SUPPORT
     QSettings* m_settings = nullptr;
+#else
+    void* m_settings = nullptr;  // Placeholder for NO_QT_SUPPORT mode
+#endif
     mutable Items m_items;
     mutable Items m_localSettings;
     mutable bool m_isTransactionStarted = false;
