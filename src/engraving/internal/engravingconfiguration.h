@@ -23,10 +23,11 @@
 #define MU_ENGRAVING_ENGRAVINGCONFIGURATION_H
 
 #include "async/asyncable.h"
+#include "types/retval.h"
 
 #include "modularity/ioc.h"
 #include "global/iglobalconfiguration.h"
-#include "ui/iuiconfiguration.h"
+// #include "ui/iuiconfiguration.h"
 #include "accessibility/iaccessibilityconfiguration.h"
 #include "importexport/guitarpro/iguitarproconfiguration.h"
 
@@ -36,7 +37,7 @@ namespace mu::engraving {
 class EngravingConfiguration : public IEngravingConfiguration, public async::Asyncable
 {
     INJECT(mu::framework::IGlobalConfiguration, globalConfiguration)
-    INJECT(mu::ui::IUiConfiguration, uiConfiguration)
+    //INJECT(mu::ui::IUiConfiguration, uiConfiguration)
     INJECT(mu::accessibility::IAccessibilityConfiguration, accessibilityConfiguration)
     INJECT(iex::guitarpro::IGuitarProConfiguration, guitarProConfiguration);
 

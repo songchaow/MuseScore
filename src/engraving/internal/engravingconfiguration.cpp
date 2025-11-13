@@ -68,16 +68,17 @@ void EngravingConfiguration::init()
     for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
         Settings::Key key("engraving", "engraving/colors/voice" + std::to_string(voice + 1));
 
-        settings()->setDefaultValue(key, Val(defaultVoiceColors[voice].toQColor()));
-        settings()->setDescription(key, qtrc("engraving", "Voice %1 color").arg(voice + 1).toStdString());
+        settings()->setDefaultValue(key, Val(defaultVoiceColors[voice].toString()));
+        std::string desc = "Voice " + std::to_string(voice + 1) + " color";
+        // settings()->setDescription(key, desc);
         settings()->setCanBeManuallyEdited(key, true);
-        settings()->valueChanged(key).onReceive(this, [this, voice](const Val& val) {
-            Color color = val.toQColor();
+        settings()->valueChanged(key).onReceive(nullptr, [this, voice](const Val& val) {
+            Color color = Color::fromString(val.toString());
             voiceColorKeys[voice].color = color;
             m_voiceColorChanged.send(voice, color);
         });
 
-        Color currentColor = settings()->value(key).toQColor();
+        Color currentColor = Color::fromString(settings()->value(key).toString());
         voiceColorKeys[voice] = VoiceColorKey { std::move(key), currentColor };
     }
 }
@@ -139,15 +140,16 @@ static bool defaultPageSizeIsLetter()
 SizeF EngravingConfiguration::defaultPageSize() const
 {
     // Needs to be determined only once, therefore static
-    static SizeF size = SizeF::fromQSizeF(
-        QPageSize::size(defaultPageSizeIsLetter() ? QPageSize::Letter : QPageSize::A4, QPageSize::Inch));
+    // Letter: 8.5 x 11 inches, A4: 8.27 x 11.69 inches
+    static SizeF size = defaultPageSizeIsLetter() ? SizeF(8.5, 11.0) : SizeF(8.27, 11.69);
 
     return size;
 }
 
 mu::String EngravingConfiguration::iconsFontFamily() const
 {
-    return String::fromStdString(uiConfiguration()->iconsFontFamily());
+    return String();
+    //return String::fromStdString(uiConfiguration()->iconsFontFamily());
 }
 
 Color EngravingConfiguration::defaultColor() const
@@ -208,12 +210,14 @@ Color EngravingConfiguration::noteBackgroundColor() const
 
 Color EngravingConfiguration::fontPrimaryColor() const
 {
-    return Color(uiConfiguration()->currentTheme().values[ui::ThemeStyleKey::FONT_PRIMARY_COLOR].toString());
+    return Color::BLACK;
+    //return Color(uiConfiguration()->currentTheme().values[ui::ThemeStyleKey::FONT_PRIMARY_COLOR].toString());
 }
 
 double EngravingConfiguration::guiScaling() const
 {
-    return uiConfiguration()->guiScaling();
+    return 1.0;
+    //return uiConfiguration()->guiScaling();
 }
 
 Color EngravingConfiguration::selectionColor(voice_idx_t voice, bool itemVisible) const
@@ -235,7 +239,7 @@ Color EngravingConfiguration::selectionColor(voice_idx_t voice, bool itemVisible
 
 void EngravingConfiguration::setSelectionColor(voice_idx_t voiceIndex, Color color)
 {
-    settings()->setSharedValue(voiceColorKeys[voiceIndex].key, Val(color.toQColor()));
+    settings()->setSharedValue(voiceColorKeys[voiceIndex].key, Val(color.toString()));
 }
 
 mu::async::Channel<voice_idx_t, Color> EngravingConfiguration::selectionColorChanged() const
@@ -245,7 +249,12 @@ mu::async::Channel<voice_idx_t, Color> EngravingConfiguration::selectionColorCha
 
 Color EngravingConfiguration::highlightSelectionColor(voice_idx_t voice) const
 {
-    return Color::fromQColor(selectionColor(voice).toQColor().lighter(135));
+    // Lighten the color by increasing RGB values by 35%
+    Color base = selectionColor(voice);
+    int r = std::min(255, static_cast<int>(base.red() * 1.35));
+    int g = std::min(255, static_cast<int>(base.green() * 1.35));
+    int b = std::min(255, static_cast<int>(base.blue() * 1.35));
+    return Color(r, g, b, base.alpha());
 }
 
 bool EngravingConfiguration::scoreInversionEnabled() const

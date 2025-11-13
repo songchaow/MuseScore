@@ -146,7 +146,11 @@ Score::Score()
     Score::validScores.insert(this);
     m_masterScore = 0;
 
-    m_engravingFont = engravingFonts()->fontByName("Leland");
+    IF_ASSERT_FAILED(engravingFonts()) {
+        LOGE() << "Engraving fonts provider is not available";
+    } else {
+        m_engravingFont = engravingFonts()->fontByName("Leland");
+    }
 
     m_fileDivision = Constants::DIVISION;
     m_style = DefaultStyle::defaultStyle();
@@ -1310,7 +1314,9 @@ void Score::spatiumChanged(double oldValue, double newValue)
     for (Staff* staff : m_staves) {
         staff->spatiumChanged(oldValue, newValue);
     }
-    m_layoutOptions.noteHeadWidth = m_engravingFont->width(SymId::noteheadBlack, newValue / SPATIUM20);
+    if (m_engravingFont) {
+        m_layoutOptions.noteHeadWidth = m_engravingFont->width(SymId::noteheadBlack, newValue / SPATIUM20);
+    }
     createPaddingTable();
 }
 
@@ -5538,8 +5544,12 @@ void Score::doLayoutRange(const Fraction& st, const Fraction& et)
 {
     TRACEFUNC;
 
-    m_engravingFont = engravingFonts()->fontByName(style().value(Sid::MusicalSymbolFont).value<String>().toStdString());
-    m_layoutOptions.noteHeadWidth = m_engravingFont->width(SymId::noteheadBlack, style().spatium() / SPATIUM20);
+    if (engravingFonts()) {
+        m_engravingFont = engravingFonts()->fontByName(style().value(Sid::MusicalSymbolFont).value<String>().toStdString());
+        if (m_engravingFont) {
+            m_layoutOptions.noteHeadWidth = m_engravingFont->width(SymId::noteheadBlack, style().spatium() / SPATIUM20);
+        }
+    }
 
     renderer()->layoutScore(this, st, et);
 

@@ -121,7 +121,7 @@ private:
     Items readItems() const;
     void writeValue(const Key& key, const Val& value);
 
-    QString dataPath() const;
+    String dataPath() const;
 
     QSettings* m_settings = nullptr;
     mutable Items m_items;

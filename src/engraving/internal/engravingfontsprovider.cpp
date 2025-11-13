@@ -54,6 +54,11 @@ IEngravingFontPtr EngravingFontsProvider::fontByName(const std::string& name) co
         font = doFallbackFont();
     }
 
+    if (!font) {
+        LOGE() << "Failed to find font: " << name << " and fallback font is also unavailable";
+        return nullptr;
+    }
+
     font->ensureLoad();
     return font;
 }

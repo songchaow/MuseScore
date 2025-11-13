@@ -44,7 +44,7 @@ public:
     virtual void activateWindowWithProject(const io::path_t& projectPath) = 0;
     virtual bool isHasAppInstanceWithoutProject() const = 0;
     virtual void activateWindowWithoutProject() = 0;
-    virtual bool openNewAppInstance(const QStringList& args) = 0;
+    virtual bool openNewAppInstance(const std::vector<std::string>& args) = 0;
 
     // Settings
     virtual bool isPreferencesAlreadyOpened() const = 0;
