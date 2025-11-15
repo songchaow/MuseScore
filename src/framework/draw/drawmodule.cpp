@@ -28,6 +28,11 @@
 #include "internal/qimageprovider.h"
 #endif
 
+#ifdef USE_GODOT_FONT_PROVIDER
+#include "../../../../godotfontprovider.h"
+extern mu::draw::GodotFontProvider* g_godotFontProvider;
+#endif
+
 using namespace mu::draw;
 
 std::string DrawModule::moduleName() const
@@ -38,7 +43,11 @@ std::string DrawModule::moduleName() const
 void DrawModule::registerExports()
 {
 #ifndef DRAW_NO_INTERNAL
+#ifdef USE_GODOT_FONT_PROVIDER
+    mu::modularity::ioc()->registerExport<draw::IFontProvider>(moduleName(), g_godotFontProvider);
+#else
     mu::modularity::ioc()->registerExport<draw::IFontProvider>(moduleName(), new QFontProvider());
+#endif
     mu::modularity::ioc()->registerExport<draw::IImageProvider>(moduleName(), new QImageProvider());
 #endif
 }

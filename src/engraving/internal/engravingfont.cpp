@@ -94,10 +94,14 @@ void EngravingFont::ensureLoad()
         return;
     }
 
+    LOGI() << "Loading font: " << m_family << " from path: " << m_fontPath;
+    
     if (-1 == fontProvider()->addSymbolFont(String::fromStdString(m_family), m_fontPath)) {
         LOGE() << "fatal error: cannot load internal font: " << m_fontPath;
         return;
     }
+    
+    LOGI() << "Font loaded successfully: " << m_family;
 
     m_font.setWeight(mu::draw::Font::Normal);
     m_font.setItalic(false);

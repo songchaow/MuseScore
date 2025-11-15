@@ -50,6 +50,11 @@
 
 #include "log.h"
 
+#ifdef USE_GODOT_FONT_PROVIDER
+#include "../../../godotfontprovider.h"
+extern mu::draw::GodotFontProvider* g_godotFontProvider;
+#endif
+
 using namespace mu::engraving;
 using namespace mu::modularity;
 using namespace mu::draw;
@@ -160,7 +165,12 @@ void EngravingModule::onInit(const framework::IApplication::RunMode& mode)
             ":/fonts/finalebroadway/FinaleBroadwayText.otf",
         };
 
-        std::shared_ptr<IFontProvider> fontProvider = ioc()->resolve<IFontProvider>("fonts");
+        std::shared_ptr<IFontProvider> fontProvider;
+#ifdef USE_GODOT_FONT_PROVIDER
+        fontProvider = std::shared_ptr<IFontProvider>(g_godotFontProvider, [](IFontProvider*){});
+#else
+        fontProvider = ioc()->resolve<IFontProvider>("fonts");
+#endif
         for (const io::path_t& font : textFonts) {
             int loadStatusCode = fontProvider->addTextFont(font);
             if (loadStatusCode == -1) {
