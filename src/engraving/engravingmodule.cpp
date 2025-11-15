@@ -122,14 +122,14 @@ void EngravingModule::onInit(const framework::IApplication::RunMode& mode)
         // Symbols
         Smufl::init();
 
-        m_engravingfonts->addFont("Leland",     "Leland",      ":/fonts/leland/Leland.otf");
-        m_engravingfonts->addFont("Bravura",    "Bravura",     ":/fonts/bravura/Bravura.otf");
-        m_engravingfonts->addFont("Emmentaler", "MScore",      ":/fonts/mscore/mscore.ttf");
-        m_engravingfonts->addFont("Gonville",   "Gootville",   ":/fonts/gootville/Gootville.otf");
-        m_engravingfonts->addFont("MuseJazz",   "MuseJazz",    ":/fonts/musejazz/MuseJazz.otf");
-        m_engravingfonts->addFont("Petaluma",   "Petaluma",    ":/fonts/petaluma/Petaluma.otf");
-        m_engravingfonts->addFont("Finale Maestro", "Finale Maestro", ":/fonts/finalemaestro/FinaleMaestro.otf");
-        m_engravingfonts->addFont("Finale Broadway", "Finale Broadway", ":/fonts/finalebroadway/FinaleBroadway.otf");
+        m_engravingfonts->addFont("Leland",     "Leland",      "fonts/leland/Leland.otf");
+        m_engravingfonts->addFont("Bravura",    "Bravura",     "fonts/bravura/Bravura.otf");
+        m_engravingfonts->addFont("Emmentaler", "MScore",      "fonts/mscore/mscore.ttf");
+        m_engravingfonts->addFont("Gonville",   "Gootville",   "fonts/gootville/Gootville.otf");
+        m_engravingfonts->addFont("MuseJazz",   "MuseJazz",    "fonts/musejazz/MuseJazz.otf");
+        m_engravingfonts->addFont("Petaluma",   "Petaluma",    "fonts/petaluma/Petaluma.otf");
+        m_engravingfonts->addFont("Finale Maestro", "Finale Maestro", "fonts/finalemaestro/FinaleMaestro.otf");
+        m_engravingfonts->addFont("Finale Broadway", "Finale Broadway", "fonts/finalebroadway/FinaleBroadway.otf");
 
         m_engravingfonts->setFallbackFont("Bravura");
 
@@ -141,28 +141,28 @@ void EngravingModule::onInit(const framework::IApplication::RunMode& mode)
 
         // Text
         const std::vector<io::path_t> textFonts = {
-            ":/fonts/musejazz/MuseJazzText.otf",
-            ":/fonts/campania/Campania.otf",
-            ":/fonts/edwin/Edwin-Roman.otf",
-            ":/fonts/edwin/Edwin-Bold.otf",
-            ":/fonts/edwin/Edwin-Italic.otf",
-            ":/fonts/edwin/Edwin-BdIta.otf",
-            ":/fonts/FreeSans.ttf",
-            ":/fonts/FreeSerif.ttf",
-            ":/fonts/FreeSerifBold.ttf",
-            ":/fonts/FreeSerifItalic.ttf",
-            ":/fonts/FreeSerifBoldItalic.ttf",
-            ":/fonts/mscoreTab.ttf",
-            ":/fonts/mscore-BC.ttf",
-            ":/fonts/leland/LelandText.otf",
-            ":/fonts/leland/Leland.otf",
-            ":/fonts/bravura/BravuraText.otf",
-            ":/fonts/gootville/GootvilleText.otf",
-            ":/fonts/mscore/MScoreText.ttf",
-            ":/fonts/petaluma/PetalumaText.otf",
-            ":/fonts/petaluma/PetalumaScript.otf",
-            ":/fonts/finalemaestro/FinaleMaestroText.otf",
-            ":/fonts/finalebroadway/FinaleBroadwayText.otf",
+            "fonts/musejazz/MuseJazzText.otf",
+            "fonts/campania/Campania.otf",
+            "fonts/edwin/Edwin-Roman.otf",
+            "fonts/edwin/Edwin-Bold.otf",
+            "fonts/edwin/Edwin-Italic.otf",
+            "fonts/edwin/Edwin-BdIta.otf",
+            "fonts/FreeSans.ttf",
+            "fonts/FreeSerif.ttf",
+            "fonts/FreeSerifBold.ttf",
+            "fonts/FreeSerifItalic.ttf",
+            "fonts/FreeSerifBoldItalic.ttf",
+            "fonts/mscoreTab.ttf",
+            "fonts/mscore-BC.ttf",
+            "fonts/leland/LelandText.otf",
+            "fonts/leland/Leland.otf",
+            "fonts/bravura/BravuraText.otf",
+            "fonts/gootville/GootvilleText.otf",
+            "fonts/mscore/MScoreText.ttf",
+            "fonts/petaluma/PetalumaText.otf",
+            "fonts/petaluma/PetalumaScript.otf",
+            "fonts/finalemaestro/FinaleMaestroText.otf",
+            "fonts/finalebroadway/FinaleBroadwayText.otf",
         };
 
         std::shared_ptr<IFontProvider> fontProvider;

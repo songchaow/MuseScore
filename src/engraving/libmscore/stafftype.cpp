@@ -1018,7 +1018,7 @@ bool StaffType::readConfigFile(const String& fileName)
     io::path_t path;
 
     if (fileName.isEmpty()) {         // defaults to built-in xml
-        path = ":/fonts/fonts_tablature.xml";
+        path = "fonts/fonts_tablature.xml";
         _durationFonts.clear();
         _fretFonts.clear();
     } else {
