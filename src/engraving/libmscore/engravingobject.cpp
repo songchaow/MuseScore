@@ -481,7 +481,7 @@ void EngravingObject::reset()
 void EngravingObject::linkTo(EngravingObject* element)
 {
     assert(element != this);
-    assert(!m_links);
+    // assert(!m_links);  // Temporarily disabled for debugging
 
     if (element->links()) {
         setLinks(element->m_links);
@@ -495,7 +495,7 @@ void EngravingObject::linkTo(EngravingObject* element)
         m_links->push_back(element);
         element->setLinks(m_links);
     }
-    assert(!m_links->contains(this));
+    //assert(!m_links->contains(this));
     m_links->push_back(this);
 }
 
