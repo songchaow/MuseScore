@@ -372,6 +372,11 @@ int System::y2staff(double y) const
 
 staff_idx_t System::searchStaff(double y, staff_idx_t preferredStaff /* = invalid */, double spacingFactor) const
 {
+    // VBox systems (title frames, etc.) don't have staves - return invalid index
+    if (vbox()) {
+        return mu::nidx;
+    }
+
     staff_idx_t i = 0;
     const size_t nstaves = score()->nstaves();
     for (; i < nstaves;) {
