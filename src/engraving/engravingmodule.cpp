@@ -161,7 +161,7 @@ void EngravingModule::onInit(const framework::IApplication::RunMode& mode)
             "fonts/mscore/MScoreText.ttf",
             "fonts/petaluma/PetalumaText.otf",
             "fonts/petaluma/PetalumaScript.otf",
-            "fonts/finalemaestro/FinaleMaestroText.otf",
+            "fonts/finalemaestro/FinaleMaestroText-Regular.otf",
             "fonts/finalebroadway/FinaleBroadwayText.otf",
         };
 
