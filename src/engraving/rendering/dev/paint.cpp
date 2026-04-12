@@ -30,6 +30,10 @@
 
 #include "log.h"
 
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+#include "../../../../../drawdebug_logger.h"
+#endif
+
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::dev;
 
@@ -90,12 +94,35 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
             //! NOTE Check draw rect, usually for optimisation drawing on screen (draw only what we see)
             RectF drawRect;
             RectF pageAbsRect = pageRect.translated(pagePos);
+            bool pageIntersectsFrame = true;
             if (opt.frameRect.isValid()) {
                 if (pageAbsRect.right() < opt.frameRect.left()) {
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+                    DrawDebugLogger::instance().logPageQuery(pi,
+                                                             pageAbsRect,
+                                                             opt.frameRect,
+                                                             RectF(),
+                                                             static_cast<int>(page->elements().size()),
+                                                             0,
+                                                             false,
+                                                             false,
+                                                             "page_before_frame_rect_left_edge");
+#endif
                     continue;
                 }
 
                 if (pageAbsRect.left() > opt.frameRect.right()) {
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+                    DrawDebugLogger::instance().logPageQuery(pi,
+                                                             pageAbsRect,
+                                                             opt.frameRect,
+                                                             RectF(),
+                                                             static_cast<int>(page->elements().size()),
+                                                             0,
+                                                             false,
+                                                             false,
+                                                             "page_after_frame_rect_right_edge");
+#endif
                     break;
                 }
 
@@ -129,6 +156,7 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
 
             // Draw page elements
             bool disableClipping = false;
+            const bool clippingRequested = !painter->hasClipping();
 
             if (!painter->hasClipping()) {
                 painter->setClipping(true);
@@ -136,7 +164,23 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
                 disableClipping = true;
             }
 
+            const int pageElementCount = static_cast<int>(page->elements().size());
             std::vector<EngravingItem*> elements = page->items(drawRect.translated(-pagePos));
+
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+            DrawDebugLogger::instance().logPageQuery(pi,
+                                                     pageAbsRect,
+                                                     opt.frameRect,
+                                                     drawRect,
+                                                     pageElementCount,
+                                                     static_cast<int>(elements.size()),
+                                                     pageIntersectsFrame,
+                                                     clippingRequested,
+                                                     clippingRequested
+                                                     ? "candidate_count_from_bsp_query; clipping_requested_but_backend_result_unknown"
+                                                     : "candidate_count_from_bsp_query");
+#endif
+
             paintItems(*painter, elements, opt.isPrinting);
 
             if (disableClipping) {
