@@ -146,10 +146,72 @@
 
 #include "infrastructure/rtti.h"
 
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+#include "../../../../../drawdebug_logger.h"
+#endif
+
 using namespace mu::engraving;
 using namespace mu::engraving::rtti;
 using namespace mu::engraving::rendering::dev;
 using namespace mu::draw;
+
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+namespace {
+bool shouldLogTDrawDispatch(const EngravingItem* item)
+{
+    if (!item) {
+        return false;
+    }
+
+    switch (item->type()) {
+    case ElementType::FIGURED_BASS:
+    case ElementType::HARMONY:
+    case ElementType::LYRICS:
+    case ElementType::LYRICSLINE_SEGMENT:
+    case ElementType::NOTE:
+    case ElementType::STAFF_TEXT:
+    case ElementType::SYMBOL:
+    case ElementType::FSYMBOL:
+    case ElementType::SYSTEM_TEXT:
+    case ElementType::TEXT:
+    case ElementType::TEXTLINE_SEGMENT:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void logTDrawDispatch(const EngravingItem* item, const char* notes)
+{
+    if (!shouldLogTDrawDispatch(item)) {
+        return;
+    }
+
+    DrawDebugLogger::instance().logElementState(item,
+                                                -1,
+                                                -1,
+                                                true,
+                                                "tdraw_dispatch",
+                                                "type_dispatched",
+                                                notes);
+}
+
+void logTDrawEarlyReturn(const EngravingItem* item, const char* notes)
+{
+    if (!item) {
+        return;
+    }
+
+    DrawDebugLogger::instance().logElementState(item,
+                                                -1,
+                                                -1,
+                                                true,
+                                                "tdraw_dispatch",
+                                                "type_specific_early_return",
+                                                notes);
+}
+}
+#endif
 
 void TDraw::drawItem(const EngravingItem* item, draw::Painter* painter)
 {
@@ -203,7 +265,11 @@ void TDraw::drawItem(const EngravingItem* item, draw::Painter* painter)
 
     case ElementType::FERMATA:      draw(item_cast<const Fermata*>(item), painter);
         break;
-    case ElementType::FIGURED_BASS: draw(item_cast<const FiguredBass*>(item), painter);
+    case ElementType::FIGURED_BASS:
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawDispatch(item, "dispatch_to_TDraw::draw(const FiguredBass*)");
+#endif
+        draw(item_cast<const FiguredBass*>(item), painter);
         break;
     case ElementType::FINGERING:    draw(item_cast<const Fingering*>(item), painter);
         break;
@@ -211,7 +277,11 @@ void TDraw::drawItem(const EngravingItem* item, draw::Painter* painter)
         break;
     case ElementType::FRET_CIRCLE:  draw(item_cast<const FretCircle*>(item), painter);
         break;
-    case ElementType::FSYMBOL:      draw(item_cast<const FSymbol*>(item), painter);
+    case ElementType::FSYMBOL:
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawDispatch(item, "dispatch_to_TDraw::draw(const FSymbol*)");
+#endif
+        draw(item_cast<const FSymbol*>(item), painter);
         break;
 
     case ElementType::GLISSANDO_SEGMENT: draw(item_cast<const GlissandoSegment*>(item), painter);
@@ -225,7 +295,11 @@ void TDraw::drawItem(const EngravingItem* item, draw::Painter* painter)
         break;
     case ElementType::HARMONIC_MARK_SEGMENT: draw(item_cast<const HarmonicMarkSegment*>(item), painter);
         break;
-    case ElementType::HARMONY:      draw(item_cast<const Harmony*>(item), painter);
+    case ElementType::HARMONY:
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawDispatch(item, "dispatch_to_TDraw::draw(const Harmony*)");
+#endif
+        draw(item_cast<const Harmony*>(item), painter);
         break;
     case ElementType::HOOK:         draw(item_cast<const Hook*>(item), painter);
         break;
@@ -251,9 +325,17 @@ void TDraw::drawItem(const EngravingItem* item, draw::Painter* painter)
         break;
     case ElementType::LET_RING_SEGMENT: draw(item_cast<const LetRingSegment*>(item), painter);
         break;
-    case ElementType::LYRICS:       draw(item_cast<const Lyrics*>(item), painter);
+    case ElementType::LYRICS:
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawDispatch(item, "dispatch_to_TDraw::draw(const Lyrics*)");
+#endif
+        draw(item_cast<const Lyrics*>(item), painter);
         break;
-    case ElementType::LYRICSLINE_SEGMENT: draw(item_cast<const LyricsLineSegment*>(item), painter);
+    case ElementType::LYRICSLINE_SEGMENT:
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawDispatch(item, "dispatch_to_TDraw::draw(const LyricsLineSegment*)");
+#endif
+        draw(item_cast<const LyricsLineSegment*>(item), painter);
         break;
 
     case ElementType::MARKER:       draw(item_cast<const Marker*>(item), painter);
@@ -267,7 +349,11 @@ void TDraw::drawItem(const EngravingItem* item, draw::Painter* painter)
     case ElementType::MMREST_RANGE: draw(item_cast<const MMRestRange*>(item), painter);
         break;
 
-    case ElementType::NOTE:         draw(item_cast<const Note*>(item), painter);
+    case ElementType::NOTE:
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawDispatch(item, "dispatch_to_TDraw::draw(const Note*)");
+#endif
+        draw(item_cast<const Note*>(item), painter);
         break;
     case ElementType::NOTEDOT:      draw(item_cast<const NoteDot*>(item), painter);
         break;
@@ -307,7 +393,11 @@ void TDraw::drawItem(const EngravingItem* item, draw::Painter* painter)
         break;
     case ElementType::STAFF_STATE:          draw(item_cast<const StaffState*>(item), painter);
         break;
-    case ElementType::STAFF_TEXT:           draw(item_cast<const StaffText*>(item), painter);
+    case ElementType::STAFF_TEXT:
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawDispatch(item, "dispatch_to_TDraw::draw(const StaffText*)");
+#endif
+        draw(item_cast<const StaffText*>(item), painter);
         break;
     case ElementType::STAFFTYPE_CHANGE:     draw(item_cast<const StaffTypeChange*>(item), painter);
         break;
@@ -319,20 +409,36 @@ void TDraw::drawItem(const EngravingItem* item, draw::Painter* painter)
         break;
     case ElementType::STRETCHED_BEND:       draw(item_cast<const StretchedBend*>(item), painter);
         break;
-    case ElementType::SYMBOL:               draw(item_cast<const Symbol*>(item), painter);
+    case ElementType::SYMBOL:
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawDispatch(item, "dispatch_to_TDraw::draw(const Symbol*)");
+#endif
+        draw(item_cast<const Symbol*>(item), painter);
         break;
     case ElementType::SYSTEM_DIVIDER:       draw(item_cast<const SystemDivider*>(item), painter);
         break;
-    case ElementType::SYSTEM_TEXT:          draw(item_cast<const SystemText*>(item), painter);
+    case ElementType::SYSTEM_TEXT:
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawDispatch(item, "dispatch_to_TDraw::draw(const SystemText*)");
+#endif
+        draw(item_cast<const SystemText*>(item), painter);
         break;
 
     case ElementType::TAB_DURATION_SYMBOL:  draw(item_cast<const TabDurationSymbol*>(item), painter);
         break;
     case ElementType::TEMPO_TEXT:           draw(item_cast<const TempoText*>(item), painter);
         break;
-    case ElementType::TEXT:                 draw(item_cast<const Text*>(item), painter);
+    case ElementType::TEXT:
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawDispatch(item, "dispatch_to_TDraw::draw(const Text*)");
+#endif
+        draw(item_cast<const Text*>(item), painter);
         break;
-    case ElementType::TEXTLINE_SEGMENT:     draw(item_cast<const TextLineSegment*>(item), painter);
+    case ElementType::TEXTLINE_SEGMENT:
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawDispatch(item, "dispatch_to_TDraw::draw(const TextLineSegment*)");
+#endif
+        draw(item_cast<const TextLineSegment*>(item), painter);
         break;
     case ElementType::TIE_SEGMENT:          draw(item_cast<const TieSegment*>(item), painter);
         break;
@@ -1586,6 +1692,12 @@ void TDraw::drawTextLineBaseSegment(const TextLineBaseSegment* item, Painter* pa
 
     if ((item->npoints() == 0)
         || (item->score() && (item->score()->printing() || !item->score()->isShowInvisible()) && !tl->lineVisible())) {
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawEarlyReturn(item,
+                            item->npoints() == 0
+                            ? "TextLineBaseSegment line suppressed because item->npoints() == 0"
+                            : "TextLineBaseSegment line suppressed because lineVisible() is false under current score visibility settings");
+#endif
         return;
     }
 
@@ -1732,11 +1844,17 @@ void TDraw::draw(const Harmony* item, Painter* painter)
     TRACE_DRAW_ITEM;
 
     if (item->isDrawEditMode()) {
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawEarlyReturn(item, "Harmony draw fell back to drawTextBase() because isDrawEditMode() is true");
+#endif
         drawTextBase(item, painter);
         return;
     }
 
     if (item->textList().empty()) {
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawEarlyReturn(item, "Harmony draw fell back to drawTextBase() because textList() is empty");
+#endif
         drawTextBase(item, painter);
         return;
     }
@@ -1966,6 +2084,9 @@ void TDraw::draw(const LyricsLineSegment* item, Painter* painter)
     TRACE_DRAW_ITEM;
 
     if (item->numOfDashes() < 1) {               // nothing to draw
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawEarlyReturn(item, "LyricsLineSegment skipped because numOfDashes() < 1");
+#endif
         return;
     }
 
@@ -2103,6 +2224,9 @@ void TDraw::draw(const Note* item, Painter* painter)
 {
     TRACE_DRAW_ITEM;
     if (item->hidden()) {
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawEarlyReturn(item, "Note skipped because hidden() returned true");
+#endif
         return;
     }
 
@@ -2117,6 +2241,9 @@ void TDraw::draw(const Note* item, Painter* painter)
     // tablature
     if (tablature) {
         if (item->displayFret() == Note::DisplayFretOption::Hide) {
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+            logTDrawEarlyReturn(item, "Tablature note skipped because displayFret() == Hide");
+#endif
             return;
         }
         const Staff* st = item->staff();
@@ -2124,6 +2251,9 @@ void TDraw::draw(const Note* item, Painter* painter)
         if (item->tieBack() && !tab->showBackTied()) {
             if (item->chord()->measure()->system() == item->tieBack()->startNote()->chord()->measure()->system() && item->el().empty()) {
                 // fret should be hidden, so return without drawing it
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+                logTDrawEarlyReturn(item, "Tablature note skipped because back-tied fret should stay hidden on the same system");
+#endif
                 return;
             }
         }
@@ -2166,6 +2296,9 @@ void TDraw::draw(const Note* item, Painter* painter)
     else {
         // skip drawing, if second note of a cross-measure value
         if (item->chord() && item->chord()->crossMeasure() == CrossMeasure::SECOND) {
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+            logTDrawEarlyReturn(item, "Note skipped because chord()->crossMeasure() == CrossMeasure::SECOND");
+#endif
             return;
         }
         // warn if pitch extends usable range of instrument
@@ -2654,13 +2787,18 @@ void TDraw::draw(const Sticking* item, Painter* painter)
 void TDraw::draw(const Symbol* item, Painter* painter)
 {
     TRACE_DRAW_ITEM;
-    if (!item->isNoteDot() || !item->staff()->isTabStaff(item->tick())) {
-        painter->setPen(item->curColor());
-        if (item->scoreFont()) {
-            item->scoreFont()->draw(item->sym(), painter, item->magS(), PointF());
-        } else {
-            item->drawSymbol(item->sym(), painter);
-        }
+    if (item->isNoteDot() && item->staff() && item->staff()->isTabStaff(item->tick())) {
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        logTDrawEarlyReturn(item, "Symbol skipped because note dots are not drawn on tablature staves");
+#endif
+        return;
+    }
+
+    painter->setPen(item->curColor());
+    if (item->scoreFont()) {
+        item->scoreFont()->draw(item->sym(), painter, item->magS(), PointF());
+    } else {
+        item->drawSymbol(item->sym(), painter);
     }
 }
 
