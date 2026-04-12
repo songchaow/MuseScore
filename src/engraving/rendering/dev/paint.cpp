@@ -37,6 +37,24 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::dev;
 
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+namespace {
+const char* interactionUnavailableNotes(const EngravingItem* item)
+{
+    if (!item) {
+        return "missing_item";
+    }
+
+    const Score* score = item->score();
+    if (!item->visible() && score && (score->printing() || !score->isShowInvisible())) {
+        return "visible_false_hidden_by_score_visibility_settings";
+    }
+
+    return "isInteractionAvailable_returned_false";
+}
+}
+#endif
+
 void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRenderer::PaintOptions& opt)
 {
     TRACEFUNC;
@@ -181,7 +199,7 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
                                                      : "candidate_count_from_bsp_query");
 #endif
 
-            paintItems(*painter, elements, opt.isPrinting);
+            paintItems(*painter, elements, opt.isPrinting, pi);
 
             if (disableClipping) {
                 painter->setClipping(false);
@@ -252,33 +270,73 @@ SizeF Paint::pageSizeInch(const Score* score, const IScoreRenderer::PaintOptions
     return pageRect.size() / mu::engraving::DPI;
 }
 
-void Paint::paintItem(mu::draw::Painter& painter, const EngravingItem* item)
+void Paint::paintItem(mu::draw::Painter& painter, const EngravingItem* item, int pageIndex, int sortedIndex)
 {
     TRACEFUNC;
     if (item->skipDraw()) {
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        DrawDebugLogger::instance().logElementState(item,
+                                                    pageIndex,
+                                                    sortedIndex,
+                                                    true,
+                                                    "paint_item",
+                                                    "skip_draw",
+                                                    "item->skipDraw() returned true");
+#endif
         return;
     }
     item->itemDiscovered = false;
     PointF itemPosition(item->pagePos());
+
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+    DrawDebugLogger::instance().logElementState(item,
+                                                pageIndex,
+                                                sortedIndex,
+                                                true,
+                                                "paint_item",
+                                                "dispatched_to_renderer",
+                                                "paintItem translated item->pagePos() and called renderer()->drawItem()");
+#endif
 
     painter.translate(itemPosition);
     EngravingItem::renderer()->drawItem(item, &painter);
     painter.translate(-itemPosition);
 }
 
-void Paint::paintItems(mu::draw::Painter& painter, const std::vector<EngravingItem*>& items, bool isPrinting)
+void Paint::paintItems(mu::draw::Painter& painter, const std::vector<EngravingItem*>& items, bool isPrinting, int pageIndex)
 {
     TRACEFUNC;
     std::vector<EngravingItem*> sortedItems(items.begin(), items.end());
 
     std::sort(sortedItems.begin(), sortedItems.end(), mu::engraving::elementLessThan);
 
+    int sortedIndex = 0;
     for (const EngravingItem* item : sortedItems) {
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        DrawDebugLogger::instance().logElementState(item,
+                                                    pageIndex,
+                                                    sortedIndex,
+                                                    true,
+                                                    "paint_items_filter",
+                                                    "sorted_candidate",
+                                                    "item selected by page->items() BSP query and sorted by elementLessThan");
+#endif
         if (!item->isInteractionAvailable()) {
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+            DrawDebugLogger::instance().logElementState(item,
+                                                        pageIndex,
+                                                        sortedIndex,
+                                                        true,
+                                                        "paint_items_filter",
+                                                        "interaction_unavailable",
+                                                        interactionUnavailableNotes(item));
+#endif
+            sortedIndex += 1;
             continue;
         }
 
-        paintItem(painter, item);
+        paintItem(painter, item, pageIndex, sortedIndex);
+        sortedIndex += 1;
     }
 
 #ifdef MUE_ENABLE_ENGRAVING_PAINT_DEBUGGER
