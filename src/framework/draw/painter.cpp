@@ -541,9 +541,15 @@ bool Painter::hasClipping() const
 void Painter::setClipRect(const RectF& rect)
 {
     m_provider->setClipRect(rect);
+    if (extended) {
+        extended->setClipRect(rect);
+    }
 }
 
 void Painter::setClipping(bool enable)
 {
     m_provider->setClipping(enable);
+    if (extended) {
+        extended->setClipping(enable);
+    }
 }
