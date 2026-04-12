@@ -296,6 +296,7 @@ void Paint::paintItem(mu::draw::Painter& painter, const EngravingItem* item, int
                                                 "paint_item",
                                                 "dispatched_to_renderer",
                                                 "paintItem translated item->pagePos() and called renderer()->drawItem()");
+    DrawDebugElementScope elementScope(item, pageIndex, sortedIndex);
 #endif
 
     painter.translate(itemPosition);
