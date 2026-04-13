@@ -21,6 +21,9 @@
  */
 #include "paint.h"
 
+#include <sstream>
+#include <string>
+
 #include "draw/painter.h"
 #include "libmscore/score.h"
 #include "libmscore/page.h"
@@ -39,6 +42,18 @@ using namespace mu::engraving::rendering::dev;
 
 #if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
 namespace {
+struct MonitoredTypeCounts {
+    int page_total = 0;
+    int frame_intersecting = 0;
+    int candidate = 0;
+};
+
+struct PageQueryTypeStats {
+    MonitoredTypeCounts note;
+    MonitoredTypeCounts stem;
+    MonitoredTypeCounts barline;
+};
+
 const char* interactionUnavailableNotes(const EngravingItem* item)
 {
     if (!item) {
@@ -51,6 +66,69 @@ const char* interactionUnavailableNotes(const EngravingItem* item)
     }
 
     return "isInteractionAvailable_returned_false";
+}
+
+MonitoredTypeCounts* monitoredTypeCountsFor(PageQueryTypeStats& stats, const EngravingItem* item)
+{
+    if (!item) {
+        return nullptr;
+    }
+
+    switch (item->type()) {
+    case ElementType::NOTE:
+        return &stats.note;
+    case ElementType::STEM:
+        return &stats.stem;
+    case ElementType::BAR_LINE:
+        return &stats.barline;
+    default:
+        return nullptr;
+    }
+}
+
+void accumulatePageTypeStats(PageQueryTypeStats& stats,
+                             const std::vector<EngravingItem*>& items,
+                             const mu::RectF& frame_local_rect,
+                             bool treat_as_candidates)
+{
+    for (const EngravingItem* item : items) {
+        MonitoredTypeCounts* counts = monitoredTypeCountsFor(stats, item);
+        if (!counts) {
+            continue;
+        }
+
+        if (treat_as_candidates) {
+            counts->candidate += 1;
+            continue;
+        }
+
+        counts->page_total += 1;
+        if (!frame_local_rect.isValid() || item->pageBoundingRect().intersects(frame_local_rect)) {
+            counts->frame_intersecting += 1;
+        }
+    }
+}
+
+std::string monitoredTypeCountsToJson(const PageQueryTypeStats& stats)
+{
+    auto appendCounts = [](std::ostringstream& oss, const char* name, const MonitoredTypeCounts& counts, bool add_comma) {
+        oss << "\"" << name << "\":{"
+            << "\"page_total\":" << counts.page_total
+            << ",\"frame_intersecting\":" << counts.frame_intersecting
+            << ",\"candidate\":" << counts.candidate
+            << "}";
+        if (add_comma) {
+            oss << ",";
+        }
+    };
+
+    std::ostringstream oss;
+    oss << "{";
+    appendCounts(oss, "Note", stats.note, true);
+    appendCounts(oss, "Stem", stats.stem, true);
+    appendCounts(oss, "BarLine", stats.barline, false);
+    oss << "}";
+    return oss.str();
 }
 }
 #endif
@@ -113,6 +191,10 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
             RectF drawRect;
             RectF pageAbsRect = pageRect.translated(pagePos);
             bool pageIntersectsFrame = true;
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+            const std::vector<EngravingItem*> pageElements = page->elements();
+            const int pageElementCount = static_cast<int>(pageElements.size());
+#endif
             if (opt.frameRect.isValid()) {
                 if (pageAbsRect.right() < opt.frameRect.left()) {
 #if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
@@ -120,7 +202,7 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
                                                              pageAbsRect,
                                                              opt.frameRect,
                                                              RectF(),
-                                                             static_cast<int>(page->elements().size()),
+                                                             pageElementCount,
                                                              0,
                                                              false,
                                                              false,
@@ -135,7 +217,7 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
                                                              pageAbsRect,
                                                              opt.frameRect,
                                                              RectF(),
-                                                             static_cast<int>(page->elements().size()),
+                                                             pageElementCount,
                                                              0,
                                                              false,
                                                              false,
@@ -182,10 +264,14 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
                 disableClipping = true;
             }
 
-            const int pageElementCount = static_cast<int>(page->elements().size());
-            std::vector<EngravingItem*> elements = page->items(drawRect.translated(-pagePos));
+            const RectF frameLocalRect = drawRect.translated(-pagePos);
+            std::vector<EngravingItem*> elements = page->items(frameLocalRect);
 
 #if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+            PageQueryTypeStats monitoredTypeStats;
+            accumulatePageTypeStats(monitoredTypeStats, pageElements, frameLocalRect, false);
+            accumulatePageTypeStats(monitoredTypeStats, elements, frameLocalRect, true);
+
             DrawDebugLogger::instance().logPageQuery(pi,
                                                      pageAbsRect,
                                                      opt.frameRect,
@@ -196,7 +282,8 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
                                                      clippingRequested,
                                                      clippingRequested
                                                      ? "candidate_count_from_bsp_query; clipping_requested_but_backend_result_unknown"
-                                                     : "candidate_count_from_bsp_query");
+                                                     : "candidate_count_from_bsp_query",
+                                                     monitoredTypeCountsToJson(monitoredTypeStats));
 #endif
 
             paintItems(*painter, elements, opt.isPrinting, pi);
