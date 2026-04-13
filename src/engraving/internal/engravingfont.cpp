@@ -21,6 +21,7 @@
  */
 #include "engravingfont.h"
 
+#include <memory>
 #include <sstream>
 
 #include "serialization/json.h"
@@ -39,6 +40,38 @@
 #if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
 #include "../../../../drawdebug_logger.h"
 #endif
+
+namespace {
+std::unique_ptr<mu::io::File> openReadOnlyResourceFileWithFallback(const mu::io::path_t& path, mu::io::path_t* resolvedPath = nullptr)
+{
+    auto tryOpen = [](const mu::io::path_t& candidate) -> std::unique_ptr<mu::io::File> {
+        auto file = std::make_unique<mu::io::File>(candidate);
+        if (!file->open(mu::io::IODevice::ReadOnly)) {
+            return nullptr;
+        }
+        return file;
+    };
+
+    if (auto file = tryOpen(path)) {
+        if (resolvedPath) {
+            *resolvedPath = path;
+        }
+        return file;
+    }
+
+    if (path.toStdString().rfind("res://", 0) != 0) {
+        const mu::io::path_t resPath = "res://" + path;
+        if (auto file = tryOpen(resPath)) {
+            if (resolvedPath) {
+                *resolvedPath = resPath;
+            }
+            return file;
+        }
+    }
+
+    return nullptr;
+}
+}
 
 using namespace mu;
 using namespace mu::io;
@@ -200,16 +233,17 @@ void EngravingFont::ensureLoad()
         computeMetrics(sym, code, static_cast<SymId>(id));
     }
 
-    File metadataFile(io::FileInfo(m_fontPath).path() + u"/metadata.json");
-    if (!metadataFile.open(IODevice::ReadOnly)) {
-        LOGE() << "Failed to open glyph metadata file: " << metadataFile.filePath();
+    io::path_t metadataPath = io::FileInfo(m_fontPath).path() + u"/metadata.json";
+    std::unique_ptr<File> metadataFile = openReadOnlyResourceFileWithFallback(metadataPath, &metadataPath);
+    if (!metadataFile) {
+        LOGE() << "Failed to open glyph metadata file: " << metadataPath;
         return;
     }
 
     std::string error;
-    JsonObject metadataJson = JsonDocument::fromJson(metadataFile.readAll(), &error).rootObject();
+    JsonObject metadataJson = JsonDocument::fromJson(metadataFile->readAll(), &error).rootObject();
     if (!error.empty()) {
-        LOGE() << "Json parse error in " << metadataFile.filePath() << ", error: " << error;
+        LOGE() << "Json parse error in " << metadataPath << ", error: " << error;
         return;
     }
 
@@ -607,6 +641,7 @@ void EngravingFont::computeMetrics(EngravingFont::Sym& sym, const Smufl::Code& c
         std::ostringstream oss;
         oss << "{"
             << "\"font_family\":" << quoted(m_family)
+            << ",\"font_path\":" << quoted(m_fontPath.toString().toStdString())
             << ",\"sym_id\":" << static_cast<int>(symId)
             << ",\"sym_name\":" << quoted(std::string(SymNames::nameForSymId(symId).ascii()))
             << ",\"smufl_code\":" << static_cast<uint32_t>(code.smuflCode)

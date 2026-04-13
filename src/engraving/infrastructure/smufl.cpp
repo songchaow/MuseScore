@@ -21,6 +21,8 @@
  */
 #include "smufl.h"
 
+#include <memory>
+
 #include "io/file.h"
 #include "serialization/json.h"
 
@@ -29,6 +31,38 @@
 #include "libmscore/mscore.h"
 
 #include "log.h"
+
+namespace {
+std::unique_ptr<mu::io::File> openReadOnlyResourceFileWithFallback(const mu::io::path_t& path, mu::io::path_t* resolvedPath = nullptr)
+{
+    auto tryOpen = [](const mu::io::path_t& candidate) -> std::unique_ptr<mu::io::File> {
+        auto file = std::make_unique<mu::io::File>(candidate);
+        if (!file->open(mu::io::IODevice::ReadOnly)) {
+            return nullptr;
+        }
+        return file;
+    };
+
+    if (auto file = tryOpen(path)) {
+        if (resolvedPath) {
+            *resolvedPath = path;
+        }
+        return file;
+    }
+
+    if (path.toStdString().rfind("res://", 0) != 0) {
+        const mu::io::path_t resPath = "res://" + path;
+        if (auto file = tryOpen(resPath)) {
+            if (resolvedPath) {
+                *resolvedPath = resPath;
+            }
+            return file;
+        }
+    }
+
+    return nullptr;
+}
+}
 
 using namespace mu;
 using namespace mu::io;
@@ -55,15 +89,16 @@ bool Smufl::init()
 
 bool Smufl::initGlyphNamesJson()
 {
-    File file("fonts/smufl/glyphnames.json");
-    if (!file.open(IODevice::ReadOnly)) {
-        LOGE() << "could not open glyph names JSON file.";
+    io::path_t glyphNamesPath("fonts/smufl/glyphnames.json");
+    std::unique_ptr<File> file = openReadOnlyResourceFileWithFallback(glyphNamesPath, &glyphNamesPath);
+    if (!file) {
+        LOGE() << "could not open glyph names JSON file. attempted path: " << glyphNamesPath;
         return false;
     }
 
     std::string error;
-    JsonObject glyphNamesJson = JsonDocument::fromJson(file.readAll(), &error).rootObject();
-    file.close();
+    JsonObject glyphNamesJson = JsonDocument::fromJson(file->readAll(), &error).rootObject();
+    file->close();
 
     if (!error.empty()) {
         LOGE() << "JSON parse error in glyph names file: " << error;
@@ -116,14 +151,15 @@ const std::map<String, StringList>& Smufl::smuflRanges()
     StringList allSymbols;
 
     if (ranges.empty()) {
-        File fi("fonts/smufl/ranges.json");
-        if (!fi.open(IODevice::ReadOnly)) {
-            LOGE() << "failed open: " << fi.filePath();
+        io::path_t rangesPath("fonts/smufl/ranges.json");
+        std::unique_ptr<File> fi = openReadOnlyResourceFileWithFallback(rangesPath, &rangesPath);
+        if (!fi) {
+            LOGE() << "failed open: " << rangesPath;
         }
         std::string error;
-        JsonObject o = JsonDocument::fromJson(fi.readAll(), &error).rootObject();
+        JsonObject o = fi ? JsonDocument::fromJson(fi->readAll(), &error).rootObject() : JsonObject();
         if (!error.empty()) {
-            LOGE() << "failed parse, err: " << error << ", file: " << fi.filePath();
+            LOGE() << "failed parse, err: " << error << ", file: " << rangesPath;
         }
 
         for (auto s : o.keys()) {
