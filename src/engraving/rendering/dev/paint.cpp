@@ -21,8 +21,11 @@
  */
 #include "paint.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 
 #include "draw/painter.h"
 #include "libmscore/score.h"
@@ -42,10 +45,17 @@ using namespace mu::engraving::rendering::dev;
 
 #if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
 namespace {
+constexpr size_t MONITORED_TYPE_SAMPLE_LIMIT = 3;
+
 struct MonitoredTypeCounts {
     int page_total = 0;
     int frame_intersecting = 0;
     int candidate = 0;
+};
+
+struct MonitoredItemSample {
+    const EngravingItem* item = nullptr;
+    bool selected_by_candidate = false;
 };
 
 struct PageQueryTypeStats {
@@ -53,6 +63,68 @@ struct PageQueryTypeStats {
     MonitoredTypeCounts stem;
     MonitoredTypeCounts barline;
 };
+
+struct PageQueryTypeSamples {
+    std::vector<MonitoredItemSample> note;
+    std::vector<MonitoredItemSample> stem;
+    std::vector<MonitoredItemSample> barline;
+};
+
+std::string jsonEscape(const std::string& value)
+{
+    std::string escaped;
+    escaped.reserve(value.size() + 8);
+    for (char ch : value) {
+        switch (ch) {
+        case '\\':
+            escaped += "\\\\";
+            break;
+        case '"':
+            escaped += "\\\"";
+            break;
+        case '\n':
+            escaped += "\\n";
+            break;
+        case '\r':
+            escaped += "\\r";
+            break;
+        case '\t':
+            escaped += "\\t";
+            break;
+        default:
+            if (static_cast<unsigned char>(ch) < 0x20) {
+                escaped += ' ';
+            } else {
+                escaped += ch;
+            }
+            break;
+        }
+    }
+    return escaped;
+}
+
+std::string quoted(const std::string& value)
+{
+    return std::string("\"") + jsonEscape(value) + "\"";
+}
+
+std::string pointToJson(const mu::PointF& point)
+{
+    std::ostringstream oss;
+    oss << "{\"x\":" << point.x()
+        << ",\"y\":" << point.y() << "}";
+    return oss.str();
+}
+
+std::string rectToJson(const mu::RectF& rect)
+{
+    std::ostringstream oss;
+    oss << "{\"x\":" << rect.x()
+        << ",\"y\":" << rect.y()
+        << ",\"width\":" << rect.width()
+        << ",\"height\":" << rect.height() << "}";
+    return oss.str();
+}
 
 const char* interactionUnavailableNotes(const EngravingItem* item)
 {
@@ -84,6 +156,67 @@ MonitoredTypeCounts* monitoredTypeCountsFor(PageQueryTypeStats& stats, const Eng
     default:
         return nullptr;
     }
+}
+
+std::vector<MonitoredItemSample>* monitoredTypeSamplesFor(PageQueryTypeSamples& samples, const EngravingItem* item)
+{
+    if (!item) {
+        return nullptr;
+    }
+
+    switch (item->type()) {
+    case ElementType::NOTE:
+        return &samples.note;
+    case ElementType::STEM:
+        return &samples.stem;
+    case ElementType::BAR_LINE:
+        return &samples.barline;
+    default:
+        return nullptr;
+    }
+}
+
+bool monitoredSampleLess(const MonitoredItemSample& lhs, const MonitoredItemSample& rhs)
+{
+    const mu::RectF lhsRect = lhs.item ? lhs.item->pageBoundingRect() : mu::RectF();
+    const mu::RectF rhsRect = rhs.item ? rhs.item->pageBoundingRect() : mu::RectF();
+
+    if (lhsRect.top() != rhsRect.top()) {
+        return lhsRect.top() < rhsRect.top();
+    }
+    if (lhsRect.left() != rhsRect.left()) {
+        return lhsRect.left() < rhsRect.left();
+    }
+    return reinterpret_cast<uintptr_t>(lhs.item) < reinterpret_cast<uintptr_t>(rhs.item);
+}
+
+void trimAndSortSamples(std::vector<MonitoredItemSample>& samples)
+{
+    std::sort(samples.begin(), samples.end(), monitoredSampleLess);
+    if (samples.size() > MONITORED_TYPE_SAMPLE_LIMIT) {
+        samples.resize(MONITORED_TYPE_SAMPLE_LIMIT);
+    }
+}
+
+void collectMonitoredTypeSamples(PageQueryTypeSamples& samples,
+                                 const std::vector<EngravingItem*>& page_items,
+                                 const std::unordered_set<const EngravingItem*>& candidate_items)
+{
+    for (const EngravingItem* item : page_items) {
+        std::vector<MonitoredItemSample>* bucket = monitoredTypeSamplesFor(samples, item);
+        if (!bucket) {
+            continue;
+        }
+
+        bucket->push_back(MonitoredItemSample {
+            item,
+            candidate_items.find(item) != candidate_items.end(),
+        });
+    }
+
+    trimAndSortSamples(samples.note);
+    trimAndSortSamples(samples.stem);
+    trimAndSortSamples(samples.barline);
 }
 
 void accumulatePageTypeStats(PageQueryTypeStats& stats,
@@ -127,6 +260,50 @@ std::string monitoredTypeCountsToJson(const PageQueryTypeStats& stats)
     appendCounts(oss, "Note", stats.note, true);
     appendCounts(oss, "Stem", stats.stem, true);
     appendCounts(oss, "BarLine", stats.barline, false);
+    oss << "}";
+    return oss.str();
+}
+
+void appendMonitoredTypeSamples(std::ostringstream& oss,
+                                const char* name,
+                                const std::vector<MonitoredItemSample>& samples,
+                                const mu::RectF& frame_local_rect,
+                                bool add_comma)
+{
+    oss << "\"" << name << "\":[";
+    for (size_t index = 0; index < samples.size(); ++index) {
+        const MonitoredItemSample& sample = samples.at(index);
+        const EngravingItem* item = sample.item;
+        const mu::RectF pageBoundingRect = item ? item->pageBoundingRect() : mu::RectF();
+        const bool intersectsFrame = item && (!frame_local_rect.isValid() || pageBoundingRect.intersects(frame_local_rect));
+
+        oss << "{"
+            << "\"element_ptr\":" << reinterpret_cast<uintptr_t>(item)
+            << ",\"subtype\":" << quoted(item ? item->translatedSubtypeUserName().toStdString() : "")
+            << ",\"page_pos\":" << pointToJson(item ? item->pagePos() : mu::PointF())
+            << ",\"bbox\":" << rectToJson(item ? item->bbox() : mu::RectF())
+            << ",\"page_bounding_rect\":" << rectToJson(pageBoundingRect)
+            << ",\"intersects_frame_local_rect\":" << (intersectsFrame ? "true" : "false")
+            << ",\"selected_by_bsp_candidate\":" << (sample.selected_by_candidate ? "true" : "false")
+            << "}";
+
+        if ((index + 1) < samples.size()) {
+            oss << ",";
+        }
+    }
+    oss << "]";
+    if (add_comma) {
+        oss << ",";
+    }
+}
+
+std::string monitoredTypeSamplesToJson(const PageQueryTypeSamples& samples, const mu::RectF& frame_local_rect)
+{
+    std::ostringstream oss;
+    oss << "{";
+    appendMonitoredTypeSamples(oss, "Note", samples.note, frame_local_rect, true);
+    appendMonitoredTypeSamples(oss, "Stem", samples.stem, frame_local_rect, true);
+    appendMonitoredTypeSamples(oss, "BarLine", samples.barline, frame_local_rect, false);
     oss << "}";
     return oss.str();
 }
@@ -202,6 +379,7 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
                                                              pageAbsRect,
                                                              opt.frameRect,
                                                              RectF(),
+                                                             RectF(),
                                                              pageElementCount,
                                                              0,
                                                              false,
@@ -216,6 +394,7 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
                     DrawDebugLogger::instance().logPageQuery(pi,
                                                              pageAbsRect,
                                                              opt.frameRect,
+                                                             RectF(),
                                                              RectF(),
                                                              pageElementCount,
                                                              0,
@@ -272,10 +451,15 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
             accumulatePageTypeStats(monitoredTypeStats, pageElements, frameLocalRect, false);
             accumulatePageTypeStats(monitoredTypeStats, elements, frameLocalRect, true);
 
+            const std::unordered_set<const EngravingItem*> candidateItems(elements.begin(), elements.end());
+            PageQueryTypeSamples monitoredTypeSamples;
+            collectMonitoredTypeSamples(monitoredTypeSamples, pageElements, candidateItems);
+
             DrawDebugLogger::instance().logPageQuery(pi,
                                                      pageAbsRect,
                                                      opt.frameRect,
                                                      drawRect,
+                                                     frameLocalRect,
                                                      pageElementCount,
                                                      static_cast<int>(elements.size()),
                                                      pageIntersectsFrame,
@@ -283,7 +467,8 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
                                                      clippingRequested
                                                      ? "candidate_count_from_bsp_query; clipping_requested_but_backend_result_unknown"
                                                      : "candidate_count_from_bsp_query",
-                                                     monitoredTypeCountsToJson(monitoredTypeStats));
+                                                     monitoredTypeCountsToJson(monitoredTypeStats),
+                                                     monitoredTypeSamplesToJson(monitoredTypeSamples, frameLocalRect));
 #endif
 
             paintItems(*painter, elements, opt.isPrinting, pi);
