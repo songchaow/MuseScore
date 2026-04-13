@@ -21,6 +21,8 @@
  */
 #include "engravingfont.h"
 
+#include <sstream>
+
 #include "serialization/json.h"
 #include "io/file.h"
 #include "io/fileinfo.h"
@@ -34,10 +36,90 @@
 
 #include "log.h"
 
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+#include "../../../../drawdebug_logger.h"
+#endif
+
 using namespace mu;
 using namespace mu::io;
 using namespace mu::draw;
 using namespace mu::engraving;
+
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+namespace {
+constexpr int NOTEHEAD_METRICS_DIAGNOSTIC_LIMIT = 64;
+int g_noteheadMetricsDiagnosticCount = 0;
+
+std::string jsonEscape(const std::string& value)
+{
+    std::string escaped;
+    escaped.reserve(value.size() + 8);
+    for (char ch : value) {
+        switch (ch) {
+        case '\\':
+            escaped += "\\\\";
+            break;
+        case '"':
+            escaped += "\\\"";
+            break;
+        case '\n':
+            escaped += "\\n";
+            break;
+        case '\r':
+            escaped += "\\r";
+            break;
+        case '\t':
+            escaped += "\\t";
+            break;
+        default:
+            if (static_cast<unsigned char>(ch) < 0x20) {
+                escaped += ' ';
+            } else {
+                escaped += ch;
+            }
+            break;
+        }
+    }
+    return escaped;
+}
+
+std::string quoted(const std::string& value)
+{
+    return std::string("\"") + jsonEscape(value) + "\"";
+}
+
+std::string rectToJson(const RectF& rect)
+{
+    std::ostringstream oss;
+    oss << "{\"x\":" << rect.x()
+        << ",\"y\":" << rect.y()
+        << ",\"width\":" << rect.width()
+        << ",\"height\":" << rect.height() << "}";
+    return oss.str();
+}
+
+std::string boolToJson(bool value)
+{
+    return value ? "true" : "false";
+}
+
+bool isNoteheadSymId(SymId symId)
+{
+    const std::string symName(SymNames::nameForSymId(symId).ascii());
+    return symName.rfind("notehead", 0) == 0;
+}
+
+bool shouldLogNoteheadMetricsDiagnostic(SymId symId)
+{
+    if (!isNoteheadSymId(symId) || g_noteheadMetricsDiagnosticCount >= NOTEHEAD_METRICS_DIAGNOSTIC_LIMIT) {
+        return false;
+    }
+
+    ++g_noteheadMetricsDiagnosticCount;
+    return true;
+}
+}
+#endif
 
 // =============================================
 // ScoreFont
@@ -115,7 +197,7 @@ void EngravingFont::ensureLoad()
             continue;
         }
         Sym& sym = m_symbols[id];
-        computeMetrics(sym, code);
+        computeMetrics(sym, code, static_cast<SymId>(id));
     }
 
     File metadataFile(io::FileInfo(m_fontPath).path() + u"/metadata.json");
@@ -408,7 +490,7 @@ void EngravingFont::loadStylisticAlternates(const JsonObject& glyphsWithAlternat
                 }
 
                 if (code.smuflCode || code.musicSymBlockCode) {
-                    computeMetrics(sym, code);
+                    computeMetrics(sym, code, glyph.alternateSymId);
                 }
             }
         }
@@ -501,18 +583,46 @@ void EngravingFont::loadEngravingDefaults(const JsonObject& engravingDefaultsObj
     m_engravingDefaults.insert({ Sid::MusicalTextFont, String(u"%1 Text").arg(String::fromStdString(m_family)) });
 }
 
-void EngravingFont::computeMetrics(EngravingFont::Sym& sym, const Smufl::Code& code)
+void EngravingFont::computeMetrics(EngravingFont::Sym& sym, const Smufl::Code& code, SymId symId)
 {
-    if (fontProvider()->inFontUcs4(m_font, code.smuflCode)) {
+    const bool hasSmuflCode = code.smuflCode && fontProvider()->inFontUcs4(m_font, code.smuflCode);
+    const bool hasMusicSymBlockCode = code.musicSymBlockCode && fontProvider()->inFontUcs4(m_font, code.musicSymBlockCode);
+    const char* resolvedSource = "none";
+
+    if (hasSmuflCode) {
         sym.code = code.smuflCode;
-    } else if (fontProvider()->inFontUcs4(m_font, code.musicSymBlockCode)) {
+        resolvedSource = "smufl";
+    } else if (hasMusicSymBlockCode) {
         sym.code = code.musicSymBlockCode;
+        resolvedSource = "music_sym_block";
     }
 
     if (sym.code > 0) {
         sym.bbox = fontProvider()->symBBox(m_font, sym.code, DPI_F);
         sym.advance = fontProvider()->symAdvance(m_font, sym.code, DPI_F);
     }
+
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+    if (shouldLogNoteheadMetricsDiagnostic(symId)) {
+        std::ostringstream oss;
+        oss << "{"
+            << "\"font_family\":" << quoted(m_family)
+            << ",\"sym_id\":" << static_cast<int>(symId)
+            << ",\"sym_name\":" << quoted(std::string(SymNames::nameForSymId(symId).ascii()))
+            << ",\"smufl_code\":" << static_cast<uint32_t>(code.smuflCode)
+            << ",\"music_sym_block_code\":" << static_cast<uint32_t>(code.musicSymBlockCode)
+            << ",\"resolved_code\":" << static_cast<uint32_t>(sym.code)
+            << ",\"resolved_source\":" << quoted(resolvedSource)
+            << ",\"has_smufl_code\":" << boolToJson(hasSmuflCode)
+            << ",\"has_music_sym_block_code\":" << boolToJson(hasMusicSymBlockCode)
+            << ",\"bbox\":" << rectToJson(sym.bbox)
+            << ",\"advance\":" << sym.advance
+            << ",\"is_valid\":" << boolToJson(sym.isValid())
+            << ",\"dpi_factor\":" << DPI_F
+            << "}";
+        DrawDebugLogger::instance().logDiagnosticEvent("symbol_metrics", oss.str());
+    }
+#endif
 }
 
 // =============================================

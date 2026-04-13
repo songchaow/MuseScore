@@ -118,7 +118,7 @@ private:
     void loadComposedGlyphs();
     void loadStylisticAlternates(const JsonObject& glyphsWithAlternatesObject);
     void loadEngravingDefaults(const JsonObject& engravingDefaultsObject);
-    void computeMetrics(Sym& sym, const Smufl::Code& code);
+    void computeMetrics(Sym& sym, const Smufl::Code& code, SymId symId);
 
     Sym& sym(SymId id);
     const Sym& sym(SymId id) const;

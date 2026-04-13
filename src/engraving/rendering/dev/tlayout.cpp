@@ -22,6 +22,8 @@
 
 #include "tlayout.h"
 
+#include <sstream>
+
 #include "global/realfn.h"
 #include "draw/fontmetrics.h"
 
@@ -35,6 +37,10 @@
 #include "../libmscore/utils.h"
 
 #include "log.h"
+
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+#include "../../../../../drawdebug_logger.h"
+#endif
 
 #include "../libmscore/accidental.h"
 #include "../libmscore/actionicon.h"
@@ -162,6 +168,71 @@ using namespace mu::draw;
 using namespace mu::engraving;
 using namespace mu::engraving::rtti;
 using namespace mu::engraving::rendering::dev;
+
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+namespace {
+constexpr int NOTEHEAD_LAYOUT_DIAGNOSTIC_LIMIT = 64;
+int g_noteheadLayoutDiagnosticCount = 0;
+
+std::string jsonEscape(const std::string& value)
+{
+    std::string escaped;
+    escaped.reserve(value.size() + 8);
+    for (char ch : value) {
+        switch (ch) {
+        case '\\':
+            escaped += "\\\\";
+            break;
+        case '"':
+            escaped += "\\\"";
+            break;
+        case '\n':
+            escaped += "\\n";
+            break;
+        case '\r':
+            escaped += "\\r";
+            break;
+        case '\t':
+            escaped += "\\t";
+            break;
+        default:
+            if (static_cast<unsigned char>(ch) < 0x20) {
+                escaped += ' ';
+            } else {
+                escaped += ch;
+            }
+            break;
+        }
+    }
+    return escaped;
+}
+
+std::string quoted(const std::string& value)
+{
+    return std::string("\"") + jsonEscape(value) + "\"";
+}
+
+std::string rectToJson(const RectF& rect)
+{
+    std::ostringstream oss;
+    oss << "{\"x\":" << rect.x()
+        << ",\"y\":" << rect.y()
+        << ",\"width\":" << rect.width()
+        << ",\"height\":" << rect.height() << "}";
+    return oss.str();
+}
+
+bool shouldLogNoteheadLayoutDiagnostic()
+{
+    if (g_noteheadLayoutDiagnosticCount >= NOTEHEAD_LAYOUT_DIAGNOSTIC_LIMIT) {
+        return false;
+    }
+
+    ++g_noteheadLayoutDiagnosticCount;
+    return true;
+}
+}
+#endif
 
 void TLayout::layoutItem(EngravingItem* item, LayoutContext& ctx)
 {
@@ -3679,6 +3750,32 @@ void TLayout::layout(Note* item, LayoutContext&)
         item->setbbox(noteHeadBbox);
 #if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
         if (!noteHeadBbox.isValid()) {
+            if (shouldLogNoteheadLayoutDiagnostic()) {
+                const auto engravingFont = item->score() ? item->score()->engravingFont() : nullptr;
+                const RectF cachedSymBbox = engravingFont ? engravingFont->bbox(nh, 1.0) : RectF();
+                const double cachedSymAdvance = engravingFont ? engravingFont->advance(nh, 1.0) : 0.0;
+                const char32_t cachedSymCode = engravingFont ? engravingFont->symCode(nh) : 0;
+                const std::string fontFamily = engravingFont ? engravingFont->family() : std::string();
+
+                std::ostringstream oss;
+                oss << "{"
+                    << "\"reason\":\"notehead_bbox_invalid\""
+                    << ",\"notehead_sym_id\":" << static_cast<int>(nh)
+                    << ",\"notehead_sym_name\":" << quoted(std::string(SymNames::nameForSymId(nh).ascii()))
+                    << ",\"cached_sym_code\":" << static_cast<uint32_t>(cachedSymCode)
+                    << ",\"cached_sym_bbox\":" << rectToJson(cachedSymBbox)
+                    << ",\"cached_sym_advance\":" << cachedSymAdvance
+                    << ",\"note_bbox\":" << rectToJson(noteHeadBbox)
+                    << ",\"pitch\":" << item->pitch()
+                    << ",\"head_group\":" << static_cast<int>(item->headGroup())
+                    << ",\"head_type\":" << static_cast<int>(item->headType())
+                    << ",\"mag_s\":" << item->magS()
+                    << ",\"is_note_name\":" << (item->isNoteName() ? "true" : "false")
+                    << ",\"font_family\":" << quoted(fontFamily)
+                    << "}";
+                DrawDebugLogger::instance().logDiagnosticEvent("notehead_layout_diagnostic", oss.str());
+            }
+
             LOGW() << "TLayout::layout(Note*): empty notehead bbox, sym=" << static_cast<int>(nh)
                    << ", pitch=" << item->pitch()
                    << ", headGroup=" << static_cast<int>(item->headGroup())
