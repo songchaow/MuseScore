@@ -34,6 +34,8 @@
 #include "../libmscore/score.h"
 #include "../libmscore/utils.h"
 
+#include "log.h"
+
 #include "../libmscore/accidental.h"
 #include "../libmscore/actionicon.h"
 #include "../libmscore/ambitus.h"
@@ -3673,7 +3675,18 @@ void TLayout::layout(Note* item, LayoutContext&)
         } else {
             item->setCachedSymNull(SymId::noSym);
         }
-        item->setbbox(item->symBbox(nh));
+        const RectF noteHeadBbox = item->symBbox(nh);
+        item->setbbox(noteHeadBbox);
+#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
+        if (!noteHeadBbox.isValid()) {
+            LOGW() << "TLayout::layout(Note*): empty notehead bbox, sym=" << static_cast<int>(nh)
+                   << ", pitch=" << item->pitch()
+                   << ", headGroup=" << static_cast<int>(item->headGroup())
+                   << ", headType=" << static_cast<int>(item->headType())
+                   << ", magS=" << item->magS()
+                   << ", font=" << item->score()->engravingFont()->family();
+        }
+#endif
     }
 }
 
