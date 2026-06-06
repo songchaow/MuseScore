@@ -93,7 +93,9 @@ std::shared_ptr<EngravingFont> EngravingFontsProvider::doFallbackFont() const
 IEngravingFontPtr EngravingFontsProvider::fallbackFont() const
 {
     std::shared_ptr<EngravingFont> font = doFallbackFont();
-    font->ensureLoad();
+    if (!font->loaded()) {
+        LOGW() << "fallback font not loaded, symbols may be missing: " << font->name();
+    }
     return font;
 }
 

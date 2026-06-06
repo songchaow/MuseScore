@@ -90,6 +90,7 @@ public:
     void draw(const SymIdList& ids, draw::Painter* p, const SizeF& mag, const PointF& pos) const override;
 
     void ensureLoad();
+    bool loaded() const { return m_loaded; }
 
 private:
 
