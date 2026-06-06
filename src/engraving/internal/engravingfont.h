@@ -98,15 +98,16 @@ private:
 
     struct Sym {
         char32_t code;
-        RectF bbox;
-        double advance = 0.0;
+        mutable RectF bbox;
+        mutable double advance = 0.0;
+        mutable bool metricsComputed = false;
 
         std::map<SmuflAnchorId, mu::PointF> smuflAnchors;
         SymIdList subSymbolIds;
 
         bool isValid() const
         {
-            return code != 0 && bbox.isValid();
+            return code != 0;
         }
 
         bool isCompound() const
@@ -120,6 +121,7 @@ private:
     void loadStylisticAlternates(const JsonObject& glyphsWithAlternatesObject);
     void loadEngravingDefaults(const JsonObject& engravingDefaultsObject);
     void computeMetrics(Sym& sym, const Smufl::Code& code, SymId symId);
+    void ensureMetrics(SymId id) const;
 
     Sym& sym(SymId id);
     const Sym& sym(SymId id) const;

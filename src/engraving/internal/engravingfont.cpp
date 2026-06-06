@@ -224,13 +224,21 @@ void EngravingFont::ensureLoad()
     m_font.setNoFontMerging(true);
     m_font.setHinting(mu::draw::Font::Hinting::PreferVerticalHinting);
 
+    // Resolve glyph codes eagerly (fast font-table lookups only).
+    // Bounding box and advance metrics are deferred to first access
+    // via ensureMetrics(), to avoid ~2500 FreeType rasterizations
+    // per font on the main thread during startup / first-edit layout.
     for (size_t id = 0; id < m_symbols.size(); ++id) {
         Smufl::Code code = Smufl::code(static_cast<SymId>(id));
         if (!code.isValid()) {
             continue;
         }
         Sym& sym = m_symbols[id];
-        computeMetrics(sym, code, static_cast<SymId>(id));
+        if (code.smuflCode && fontProvider()->inFontUcs4(m_font, code.smuflCode)) {
+            sym.code = code.smuflCode;
+        } else if (code.musicSymBlockCode && fontProvider()->inFontUcs4(m_font, code.musicSymBlockCode)) {
+            sym.code = code.musicSymBlockCode;
+        }
     }
 
     io::path_t metadataPath = io::FileInfo(m_fontPath).path() + u"/metadata.json";
@@ -710,6 +718,18 @@ bool EngravingFont::useFallbackFont(SymId id) const
 // Symbol bounding box
 // =============================================
 
+void EngravingFont::ensureMetrics(SymId id) const
+{
+    Sym& sym = const_cast<Sym&>(m_symbols[static_cast<size_t>(id)]);
+    if (sym.metricsComputed || sym.code == 0) {
+        return;
+    }
+
+    sym.bbox = fontProvider()->symBBox(m_font, sym.code, DPI_F);
+    sym.advance = fontProvider()->symAdvance(m_font, sym.code, DPI_F);
+    sym.metricsComputed = true;
+}
+
 RectF EngravingFont::bbox(SymId id, double mag) const
 {
     return bbox(id, SizeF(mag, mag));
@@ -721,6 +741,7 @@ RectF EngravingFont::bbox(SymId id, const SizeF& mag) const
         return engravingFonts()->fallbackFont()->bbox(id, mag);
     }
 
+    ensureMetrics(id);
     RectF r = sym(id).bbox;
     return RectF(r.x() * mag.width(), r.y() * mag.height(),
                  r.width() * mag.width(), r.height() * mag.height());
@@ -778,6 +799,7 @@ double EngravingFont::advance(SymId id, double mag) const
         return engravingFonts()->fallbackFont()->advance(id, mag);
     }
 
+    ensureMetrics(id);
     return sym(id).advance * mag;
 }
 
