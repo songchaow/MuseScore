@@ -93,11 +93,6 @@ Ret FluidSynth::init()
             LOGD() << message;
         } break;
         }
-
-        if (level < FLUID_DBG) {
-            bool debugme = true;
-            (void)debugme;
-        }
     };
 
     fluid_set_log_function(FLUID_PANIC, fluid_log_out, nullptr);

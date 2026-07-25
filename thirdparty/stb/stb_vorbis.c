@@ -942,7 +942,9 @@ static void *setup_malloc(vorb *f, int sz)
       f->setup_offset += sz;
       return p;
    }
-   return sz ? malloc(sz) : NULL;
+   // malloc(0) may return NULL on some platforms, causing false OOM.
+   // Allocate at least 1 byte to get a valid pointer.
+   return malloc(sz > 0 ? sz : 1);
 }
 
 static void setup_free(vorb *f, void *p)

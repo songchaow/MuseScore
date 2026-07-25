@@ -2560,7 +2560,7 @@ static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigne
         return -1;
     }
 
-    if((unsigned int)sf->fcbs->fread(compressed_data, data_size, sf->sffd) != data_size)
+    if(sf->fcbs->fread(compressed_data, data_size, sf->sffd) == FLUID_FAILED)
     {
         fluid_rec_mutex_unlock(sf->mtx);
         FLUID_LOG(FLUID_ERR, "Failed to read compressed sample data");
@@ -2573,7 +2573,7 @@ static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigne
     vorbis = stb_vorbis_open_memory(compressed_data, data_size, &error, NULL);
     if(!vorbis)
     {
-        FLUID_LOG(FLUID_ERR, "stb_vorbis_open_memory() failed with error %d", error);
+        FLUID_LOG(FLUID_ERR, "stb_vorbis_open_memory() failed (err=%d)", error);
         FLUID_FREE(compressed_data);
         return -1;
     }
