@@ -25,6 +25,7 @@
 #include <cstdint>
 #include <array>
 #include <set>
+#include <cassert>
 
 #ifndef UNUSED
 #define UNUSED(x) (void)x;

@@ -23,17 +23,21 @@
 #ifndef MU_AUDIO_SFCACHEDLOADER_H
 #define MU_AUDIO_SFCACHEDLOADER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <cstdio>
 #include <vector>
 #include <map>
 #include <string>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <sfloader/fluid_sfont.h>
 #include <sfloader/fluid_defsfont.h>
+
+#ifdef __cplusplus
+}
+#endif
 
 #include "log.h"
 
@@ -171,10 +175,7 @@ fluid_sfont_t* loadSoundFont(fluid_sfloader_t* loader, const char* filename)
 
     return result;
 }
-}
 
-#ifdef __cplusplus
-}
-#endif
+} // namespace mu::audio::synth
 
 #endif // MU_AUDIO_SFCACHEDLOADER_H

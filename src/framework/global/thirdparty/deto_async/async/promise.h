@@ -4,7 +4,13 @@
 #include <memory>
 #include <string>
 
+#ifndef NO_QT_SUPPORT
 #include <QtCore/qcompilerdetection.h>
+#else
+#ifndef Q_REQUIRED_RESULT
+#define Q_REQUIRED_RESULT [[nodiscard]]
+#endif
+#endif
 
 #include "internal/abstractinvoker.h"
 #include "async.h"

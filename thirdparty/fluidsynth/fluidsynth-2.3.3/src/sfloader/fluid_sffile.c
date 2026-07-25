@@ -680,7 +680,7 @@ static int process_info(SFData *sf, int size)
 
             if(sf->version.major == 3)
             {
-#if !LIBSNDFILE_SUPPORT
+#if !LIBSNDFILE_SUPPORT && !HAVE_STB_VORBIS
                 FLUID_LOG(FLUID_WARN,
                           "Sound font version is %d.%d but fluidsynth was compiled without"
                           " support for (v3.x)",
@@ -2518,6 +2518,111 @@ error_exit:
     FLUID_FREE(wav_data);
     sf_close(sndfile);
     return -1;
+}
+#elif defined(HAVE_STB_VORBIS)
+
+/* Use stb_vorbis for Ogg Vorbis decoding (no libsndfile dependency) */
+#define STB_VORBIS_HEADER_ONLY
+#include "stb_vorbis.c"
+
+static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigned int end_byte, short **data)
+{
+    unsigned int data_size;
+    unsigned char *compressed_data = NULL;
+    short *wav_data = NULL;
+    int error;
+    stb_vorbis *vorbis = NULL;
+    stb_vorbis_info info;
+    int num_samples;
+    int num_decoded;
+
+    if((start_byte > sf->samplesize) || (end_byte > sf->samplesize))
+    {
+        FLUID_LOG(FLUID_ERR, "Ogg Vorbis data offsets exceed sample data chunk");
+        return -1;
+    }
+
+    data_size = end_byte - start_byte + 1;
+    compressed_data = FLUID_ARRAY(unsigned char, data_size);
+    if(!compressed_data)
+    {
+        FLUID_LOG(FLUID_ERR, "Out of memory");
+        return -1;
+    }
+
+    /* Seek to the start of the compressed data and read it */
+    fluid_rec_mutex_lock(sf->mtx);
+    if(sf->fcbs->fseek(sf->sffd, sf->samplepos + start_byte, SEEK_SET) != FLUID_OK)
+    {
+        fluid_rec_mutex_unlock(sf->mtx);
+        FLUID_LOG(FLUID_ERR, "Failed to seek to compressed sample position");
+        FLUID_FREE(compressed_data);
+        return -1;
+    }
+
+    if((unsigned int)sf->fcbs->fread(compressed_data, data_size, sf->sffd) != data_size)
+    {
+        fluid_rec_mutex_unlock(sf->mtx);
+        FLUID_LOG(FLUID_ERR, "Failed to read compressed sample data");
+        FLUID_FREE(compressed_data);
+        return -1;
+    }
+    fluid_rec_mutex_unlock(sf->mtx);
+
+    /* Open the Ogg Vorbis data from memory */
+    vorbis = stb_vorbis_open_memory(compressed_data, data_size, &error, NULL);
+    if(!vorbis)
+    {
+        FLUID_LOG(FLUID_ERR, "stb_vorbis_open_memory() failed with error %d", error);
+        FLUID_FREE(compressed_data);
+        return -1;
+    }
+
+    info = stb_vorbis_get_info(vorbis);
+
+    if(info.channels != 1)
+    {
+        FLUID_LOG(FLUID_DBG, "Unsupported channel count %d in ogg sample", info.channels);
+        stb_vorbis_close(vorbis);
+        FLUID_FREE(compressed_data);
+        return -1;
+    }
+
+    num_samples = (int)stb_vorbis_stream_length_in_samples(vorbis);
+    if(num_samples <= 0)
+    {
+        FLUID_LOG(FLUID_DBG, "Empty decompressed sample");
+        *data = NULL;
+        stb_vorbis_close(vorbis);
+        FLUID_FREE(compressed_data);
+        return 0;
+    }
+
+    wav_data = FLUID_ARRAY(short, num_samples);
+    if(!wav_data)
+    {
+        FLUID_LOG(FLUID_ERR, "Out of memory");
+        stb_vorbis_close(vorbis);
+        FLUID_FREE(compressed_data);
+        return -1;
+    }
+
+    /* Decode all samples (mono, so interleaved == per-channel) */
+    num_decoded = stb_vorbis_get_samples_short_interleaved(vorbis, 1, wav_data, num_samples);
+    if(num_decoded <= 0)
+    {
+        FLUID_LOG(FLUID_ERR, "Failed to decompress Ogg Vorbis samples");
+        FLUID_FREE(wav_data);
+        stb_vorbis_close(vorbis);
+        FLUID_FREE(compressed_data);
+        return -1;
+    }
+
+    stb_vorbis_close(vorbis);
+    FLUID_FREE(compressed_data);
+
+    *data = wav_data;
+    return num_decoded;
 }
 #else
 static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigned int end_byte, short **data)

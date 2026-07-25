@@ -25,6 +25,15 @@
 #include "runtime.h"
 #include "log.h"
 
+#include <cassert>
+
+#ifndef Q_ASSERT_X
+#define Q_ASSERT_X(cond, where, what) assert(cond)
+#endif
+#ifndef Q_ASSERT
+#define Q_ASSERT(cond) assert(cond)
+#endif
+
 namespace mu::ptr {
 template<typename T, typename E> T* checked_cast(E* source)
 {
