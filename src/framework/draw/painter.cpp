@@ -459,7 +459,15 @@ void Painter::fillRect(const RectF& rect, const Brush& brush)
     setPen(Pen(mu::draw::PenStyle::NoPen));
     setBrush(brush);
 
-    drawRect(rect);
+    // Use drawPolygon directly: the Godot GPainterProvider does not
+    // implement drawPath(), so drawRect -> drawRects -> drawPath is a no-op.
+    PointF corners[4] = {
+        PointF(rect.x(), rect.y()),
+        PointF(rect.x() + rect.width(), rect.y()),
+        PointF(rect.x() + rect.width(), rect.y() + rect.height()),
+        PointF(rect.x(), rect.y() + rect.height())
+    };
+    drawPolygon(corners, 4);
 
     setBrush(oldBrush);
     setPen(oldPen);
