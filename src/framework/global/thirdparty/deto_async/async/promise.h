@@ -123,14 +123,16 @@ public:
     template<typename Call>
     Promise<T...>& onResolve(const Asyncable* caller, Call f)
     {
-        ptr()->addCallBack(OnResolve, const_cast<Asyncable*>(caller), new ResolveCall<Call, T...>(f));
+        ptr()->addCallBack(OnResolve, const_cast<Asyncable*>(caller),
+                            std::make_shared<ResolveCall<Call, T...> >(f));
         return *this;
     }
 
     template<typename Call>
     Promise<T...>& onReject(const Asyncable* caller, Call f)
     {
-        ptr()->addCallBack(OnReject, const_cast<Asyncable*>(caller), new RejectCall<Call>(f));
+        ptr()->addCallBack(OnReject, const_cast<Asyncable*>(caller),
+                            std::make_shared<RejectCall<Call> >(f));
         return *this;
     }
 
@@ -196,30 +198,16 @@ private:
             removeAllCallBacks();
         }
 
-        void deleteCall(int _type, void* call) override
-        {
-            CallType type = static_cast<CallType>(_type);
-            switch (type) {
-            case Undefined: {} break;
-            case OnResolve: {
-                delete static_cast<IResolve*>(call);
-            } break;
-            case OnReject: {
-                delete static_cast<IReject*>(call);
-            } break;
-            }
-        }
-
-        void doInvoke(int callKey, void* call, const NotifyData& d) override
+        void doInvoke(int callKey, const std::shared_ptr<void>& call, const NotifyData& d) override
         {
             CallType type = static_cast<CallType>(callKey);
             switch (type) {
             case Undefined:  break;
             case OnResolve:
-                static_cast<IResolve*>(call)->resolved(d);
+                static_cast<IResolve*>(call.get())->resolved(d);
                 break;
             case OnReject:
-                static_cast<IReject*>(call)->rejected(d);
+                static_cast<IReject*>(call.get())->rejected(d);
                 break;
             }
         }

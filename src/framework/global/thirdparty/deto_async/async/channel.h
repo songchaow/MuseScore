@@ -35,7 +35,8 @@ public:
     template<typename Func>
     void onReceive(const Asyncable* receiver, Func f, Asyncable::AsyncMode mode = Asyncable::AsyncMode::AsyncSetOnce)
     {
-        ptr()->addCallBack(Receive, const_cast<Asyncable*>(receiver), new ReceiveCall<Func, T...>(f), mode);
+        ptr()->addCallBack(Receive, const_cast<Asyncable*>(receiver),
+                            std::make_shared<ReceiveCall<Func, T...> >(f), mode);
     }
 
     void resetOnReceive(const Asyncable* receiver)
@@ -51,7 +52,8 @@ public:
     template<typename Func>
     void onClose(const Asyncable* receiver, Func f, Asyncable::AsyncMode mode = Asyncable::AsyncMode::AsyncSetOnce)
     {
-        ptr()->addCallBack(Close, const_cast<Asyncable*>(receiver), new CloseCall<Func>(f), mode);
+        ptr()->addCallBack(Close, const_cast<Asyncable*>(receiver),
+                            std::make_shared<CloseCall<Func> >(f), mode);
     }
 
     bool isConnected() const
@@ -103,30 +105,16 @@ private:
             removeAllCallBacks();
         }
 
-        void deleteCall(int _type, void* call) override
-        {
-            CallType type = static_cast<CallType>(_type);
-            switch (type) {
-            case Undefined: {} break;
-            case Receive: {
-                delete static_cast<IReceive*>(call);
-            } break;
-            case Close: {
-                delete static_cast<IClose*>(call);
-            } break;
-            }
-        }
-
-        void doInvoke(int callKey, void* call, const NotifyData& d) override
+        void doInvoke(int callKey, const std::shared_ptr<void>& call, const NotifyData& d) override
         {
             CallType type = static_cast<CallType>(callKey);
             switch (type) {
             case Undefined:  break;
             case Receive:
-                static_cast<IReceive*>(call)->received(d);
+                static_cast<IReceive*>(call.get())->received(d);
                 break;
             case Close:
-                static_cast<IClose*>(call)->closed();
+                static_cast<IClose*>(call.get())->closed();
                 break;
             }
         }

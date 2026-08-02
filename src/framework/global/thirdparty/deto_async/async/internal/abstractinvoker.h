@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <vector>
-#include <list>
 #include <iostream>
 #include <map>
 #include <mutex>
@@ -64,7 +63,8 @@ private:
 };
 
 class QueuedInvoker;
-class AbstractInvoker : public Asyncable::IConnectable
+class AbstractInvoker : public Asyncable::IConnectable,
+    public std::enable_shared_from_this<AbstractInvoker>
 {
 public:
     void disconnectAsync(Asyncable* receiver);
@@ -81,16 +81,15 @@ protected:
     explicit AbstractInvoker();
     ~AbstractInvoker();
 
-    virtual void deleteCall(int type, void* call) = 0;
-    virtual void doInvoke(int type, void* call, const NotifyData& data) = 0;
+    virtual void doInvoke(int type, const std::shared_ptr<void>& call, const NotifyData& data) = 0;
 
     struct CallBack {
         std::thread::id threadID;
         int type = 0;
         Asyncable* receiver = nullptr;
-        void* call = nullptr;
+        std::shared_ptr<void> call;
         CallBack() {}
-        CallBack(std::thread::id threadID, int t, Asyncable* cr, void* c)
+        CallBack(std::thread::id threadID, int t, Asyncable* cr, std::shared_ptr<void> c)
             : threadID(threadID), type(t), receiver(cr), call(c) {}
     };
 
@@ -99,64 +98,39 @@ protected:
     public:
         int receiverIndexOf(Asyncable* receiver) const;
         bool containsReceiver(Asyncable* receiver) const;
+        bool containsCallBack(const CallBack& callback) const;
     };
 
     struct QInvoker
     {
-        std::mutex mutex;
-        AbstractInvoker* invoker = nullptr;
+        std::weak_ptr<AbstractInvoker> invoker;
         int type = -1;
         CallBack call;
         NotifyData data;
 
-        QInvoker(AbstractInvoker* i, int t, CallBack c, NotifyData d)
-            : invoker(i), type(t), call(c), data(d)
-        {
-            invoker->addQInvoker(this);
-        }
-
-        ~QInvoker()
-        {
-            if (invoker) {
-                invoker->removeQInvoker(this);
-            }
-        }
+        QInvoker(std::weak_ptr<AbstractInvoker> i, int t, CallBack c, NotifyData d)
+            : invoker(i), type(t), call(c), data(d) {}
 
         void invoke()
         {
-            AbstractInvoker* inv = nullptr;
-            {
-                std::lock_guard<std::mutex> lock(mutex);
-                inv = invoker;
-            }
-
+            std::shared_ptr<AbstractInvoker> inv = invoker.lock();
             if (inv) {
                 inv->invokeCallback(type, call, data);
             }
-        }
-
-        void invalidate()
-        {
-            std::lock_guard<std::mutex> lock(mutex);
-            invoker = nullptr;
         }
     };
 
     void invokeCallback(int type, const CallBack& c, const NotifyData& data);
 
-    void addCallBack(int type, Asyncable* receiver, void* call, Asyncable::AsyncMode mode = Asyncable::AsyncMode::AsyncSetRepeat);
+    void addCallBack(int type, Asyncable* receiver, std::shared_ptr<void> call,
+                     Asyncable::AsyncMode mode = Asyncable::AsyncMode::AsyncSetRepeat);
     void removeCallBack(int type, Asyncable* receiver);
     void removeAllCallBacks();
 
-    void addQInvoker(QInvoker* qi);
-    void removeQInvoker(QInvoker* qi);
+    bool containsCallBack(int type, const CallBack& callback) const;
 
-    bool containsReceiver(Asyncable* receiver) const;
-
+    mutable std::mutex m_callbacksMutex;
     std::map<int /*type*/, CallBacks > m_callbacks;
-
-    std::mutex m_qInvokersMutex;
-    std::list<QInvoker*> m_qInvokers;
 };
 
 inline void processEvents()

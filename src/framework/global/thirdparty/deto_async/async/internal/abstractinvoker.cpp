@@ -12,10 +12,6 @@ AbstractInvoker::AbstractInvoker()
 
 AbstractInvoker::~AbstractInvoker()
 {
-    std::lock_guard<std::mutex> lock(m_qInvokersMutex);
-    for (QInvoker* qi : m_qInvokers) {
-        qi->invalidate();
-    }
 }
 
 void AbstractInvoker::invoke(int type)
@@ -25,28 +21,31 @@ void AbstractInvoker::invoke(int type)
 
 void AbstractInvoker::invoke(int type, const NotifyData& data)
 {
-    auto it = m_callbacks.find(type);
-    if (it == m_callbacks.end()) {
-        return;
+    CallBacks callbacks;
+    {
+        std::lock_guard<std::mutex> lock(m_callbacksMutex);
+        auto it = m_callbacks.find(type);
+        if (it == m_callbacks.end()) {
+            return;
+        }
+
+        // Take a snapshot while the registry is locked. A callback may be
+        // removed by its receiving thread while another thread sends.
+        callbacks = it->second;
     }
 
     std::thread::id threadID = std::this_thread::get_id();
 
-    //! NOTE: explicit copy because collection can be modified from elsewhere
-    CallBacks callbacks = it->second;
-
     for (const CallBack& c : callbacks) {
-        if (!it->second.containsReceiver(c.receiver)) {
-            std::cout << "Skipping removed receiver";
-            continue;
-        }
         if (c.threadID == threadID) {
             invokeCallback(type, c, data);
         } else {
-            QInvoker* qi = new QInvoker(this, type, c, data);
+            // A queued callback takes a temporary owner only when it runs.
+            // If its invoker or receiver has gone away first, it becomes a
+            // no-op instead of following a stale raw pointer.
+            auto qi = std::make_shared<QInvoker>(shared_from_this(), type, c, data);
             QueuedInvoker::instance()->invoke(c.threadID, [qi]() {
                 qi->invoke();
-                delete qi;
             });
         }
     }
@@ -56,7 +55,10 @@ void AbstractInvoker::invokeCallback(int type, const CallBack& c, const NotifyDa
 {
     assert(c.threadID == std::this_thread::get_id());
 
-    if (!containsReceiver(c.receiver)) {
+    // A receiver can replace a callback before an older cross-thread
+    // delivery reaches its target. Check the exact registration, rather
+    // than only the receiver, so the old call object is never invoked.
+    if (!containsCallBack(type, c)) {
         return;
     }
 
@@ -79,6 +81,7 @@ void AbstractInvoker::onMainThreadInvoke(const std::function<void(const std::fun
 
 bool AbstractInvoker::isConnected() const
 {
+    std::lock_guard<std::mutex> lock(m_callbacksMutex);
     for (auto it = m_callbacks.cbegin(); it != m_callbacks.cend(); ++it) {
         const CallBacks& cs = it->second;
         if (cs.size() > 0) {
@@ -103,59 +106,77 @@ bool AbstractInvoker::CallBacks::containsReceiver(Asyncable* receiver) const
     return receiverIndexOf(receiver) > -1;
 }
 
+bool AbstractInvoker::CallBacks::containsCallBack(const CallBack& callback) const
+{
+    for (const CallBack& registered : *this) {
+        if (registered.type == callback.type
+            && registered.receiver == callback.receiver
+            && registered.call == callback.call) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void AbstractInvoker::removeCallBack(int type, Asyncable* receiver)
 {
-    auto it = m_callbacks.find(type);
-    if (it == m_callbacks.end()) {
-        return;
+    CallBack c;
+    {
+        std::lock_guard<std::mutex> lock(m_callbacksMutex);
+        auto it = m_callbacks.find(type);
+        if (it == m_callbacks.end()) {
+            return;
+        }
+
+        CallBacks& callbacks = it->second;
+        int index = callbacks.receiverIndexOf(receiver);
+        if (index < 0) {
+            return;
+        }
+
+        c = callbacks.at(index);
+        callbacks.erase(callbacks.begin() + index);
     }
 
-    CallBacks& callbacks = it->second;
-    int index = callbacks.receiverIndexOf(receiver);
-    if (index < 0) {
-        return;
-    }
-
-    CallBack c = callbacks.at(index);
     if (c.receiver) {
         c.receiver->disconnectAsync(this);
     }
-    callbacks.erase(callbacks.begin() + index);
-
-    {
-        std::lock_guard<std::mutex> lock(m_qInvokersMutex);
-        for (QInvoker* qi : m_qInvokers) {
-            if (qi->call.call == c.call) {
-                qi->invalidate();
-                break;
-            }
-        }
-    }
-
-    deleteCall(type, c.call);
 }
 
 void AbstractInvoker::removeAllCallBacks()
 {
-    for (auto it = m_callbacks.begin(); it != m_callbacks.end(); ++it) {
-        for (CallBack& c : it->second) {
-            if (c.receiver) {
-                c.receiver->disconnectAsync(this);
+    std::vector<CallBack> callbacks;
+    {
+        std::lock_guard<std::mutex> lock(m_callbacksMutex);
+        for (auto it = m_callbacks.begin(); it != m_callbacks.end(); ++it) {
+            for (const CallBack& c : it->second) {
+                callbacks.push_back(c);
             }
+        }
+        m_callbacks.clear();
+    }
 
-            deleteCall(c.type, c.call);
+    for (const CallBack& c : callbacks) {
+        if (c.receiver) {
+            c.receiver->disconnectAsync(this);
         }
     }
-    m_callbacks.clear();
 }
 
-void AbstractInvoker::addCallBack(int type, Asyncable* receiver, void* call, Asyncable::AsyncMode mode)
+void AbstractInvoker::addCallBack(int type, Asyncable* receiver, std::shared_ptr<void> call,
+                                  Asyncable::AsyncMode mode)
 {
-    const CallBacks& callbacks = m_callbacks[type];
-    if (callbacks.containsReceiver(receiver)) {
+    bool receiverAlreadyRegistered = false;
+    {
+        std::lock_guard<std::mutex> lock(m_callbacksMutex);
+        auto it = m_callbacks.find(type);
+        receiverAlreadyRegistered = it != m_callbacks.end()
+            && it->second.containsReceiver(receiver);
+    }
+
+    if (receiverAlreadyRegistered) {
         switch (mode) {
         case Asyncable::AsyncMode::AsyncSetOnce:
-            deleteCall(type, call);
             return;
         case Asyncable::AsyncMode::AsyncSetRepeat:
             removeCallBack(type, receiver);
@@ -164,7 +185,10 @@ void AbstractInvoker::addCallBack(int type, Asyncable* receiver, void* call, Asy
     }
 
     CallBack c(std::this_thread::get_id(), type, receiver, call);
-    m_callbacks[type].push_back(c);
+    {
+        std::lock_guard<std::mutex> lock(m_callbacksMutex);
+        m_callbacks[type].push_back(c);
+    }
 
     if (c.receiver) {
         c.receiver->connectAsync(this);
@@ -174,10 +198,13 @@ void AbstractInvoker::addCallBack(int type, Asyncable* receiver, void* call, Asy
 void AbstractInvoker::disconnectAsync(Asyncable* receiver)
 {
     std::vector<int> types;
-    for (auto it = m_callbacks.begin(); it != m_callbacks.end(); ++it) {
-        for (CallBack& c : it->second) {
-            if (c.receiver == receiver) {
-                types.push_back(c.type);
+    {
+        std::lock_guard<std::mutex> lock(m_callbacksMutex);
+        for (auto it = m_callbacks.begin(); it != m_callbacks.end(); ++it) {
+            for (const CallBack& c : it->second) {
+                if (c.receiver == receiver) {
+                    types.push_back(c.type);
+                }
             }
         }
     }
@@ -187,27 +214,9 @@ void AbstractInvoker::disconnectAsync(Asyncable* receiver)
     }
 }
 
-void AbstractInvoker::addQInvoker(QInvoker* qi)
+bool AbstractInvoker::containsCallBack(int type, const CallBack& callback) const
 {
-    std::lock_guard<std::mutex> lock(m_qInvokersMutex);
-    m_qInvokers.push_back(qi);
-}
-
-void AbstractInvoker::removeQInvoker(QInvoker* qi)
-{
-    std::lock_guard<std::mutex> lock(m_qInvokersMutex);
-    m_qInvokers.remove(qi);
-}
-
-bool AbstractInvoker::containsReceiver(Asyncable* receiver) const
-{
-    for (auto it = m_callbacks.begin(); it != m_callbacks.end(); ++it) {
-        for (const CallBack& c : it->second) {
-            if (c.receiver == receiver) {
-                return true;
-            }
-        }
-    }
-
-    return false;
+    std::lock_guard<std::mutex> lock(m_callbacksMutex);
+    auto it = m_callbacks.find(type);
+    return it != m_callbacks.end() && it->second.containsCallBack(callback);
 }
