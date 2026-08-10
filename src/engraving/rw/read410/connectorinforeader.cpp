@@ -93,20 +93,21 @@ bool ConnectorInfoReader::read()
             readEndpointLocation(_prevLoc);
         } else if (tag == "next") {
             readEndpointLocation(_nextLoc);
-        } else {
-            if (tag == name) {
-                m_connector = Factory::createItemByName(tag, m_connectorReceiver->score()->dummy());
-            } else {
-                LOGW("ConnectorInfoReader::read: element tag (%s) does not match connector type (%s). Is the file corrupted?",
-                     tag.ascii(), name.ascii());
-            }
-
+        } else if (tag == name) {
+            m_connector = Factory::createItemByName(tag, m_connectorReceiver->score()->dummy());
             if (!m_connector) {
                 e.unknown();
                 return false;
             }
             m_connector->setTrack(_currentLoc.track());
             TRead::readItem(m_connector, e, *m_ctx);
+        } else {
+            // The child does not match the connector type (e.g. a Chord read after the
+            // cursor escaped a spanner element). Skip it only; never read it as the
+            // connector — that would consume and lose its content.
+            LOGW("ConnectorInfoReader::read: element tag (%s) does not match connector type (%s). Is the file corrupted?",
+                 tag.ascii(), name.ascii());
+            e.unknown();
         }
     }
     return true;
@@ -188,6 +189,9 @@ void ConnectorInfoReader::addToScore(bool pasteMode)
 void ConnectorInfoReader::readConnector(std::shared_ptr<ConnectorInfoReader> info, XmlReader& e, ReadContext& ctx)
 {
     if (!info->read()) {
+        // read() already skipped the offending child via e.unknown(); skip the rest of
+        // the <Spanner> so the voice reader resumes at </Spanner>. Each element is
+        // skipped at most once — single, bounded skip.
         e.skipCurrentElement();
         return;
     }

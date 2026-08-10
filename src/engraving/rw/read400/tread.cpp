@@ -340,7 +340,13 @@ bool TRead::readItemProperties(EngravingItem* item, XmlReader& e, ReadContext& c
 {
     const AsciiStringView tag(e.name());
 
-    if (TRead::readProperty(item, tag, e, ctx, Pid::SIZE_SPATIUM_DEPENDENT)) {
+    if (tag == "eid") {
+        // Element id written by MuseScore 4.4+. This fork has no EID storage (upstream
+        // keeps one); consume the text so the element is read in one step. Leaving it
+        // unhandled makes an eid inside a <Segment> hit the double-skip that
+        // desynchronizes the connector reader.
+        e.readAsciiText();
+    } else if (TRead::readProperty(item, tag, e, ctx, Pid::SIZE_SPATIUM_DEPENDENT)) {
     } else if (TRead::readProperty(item, tag, e, ctx, Pid::OFFSET)) {
     } else if (TRead::readProperty(item, tag, e, ctx, Pid::MIN_DISTANCE)) {
     } else if (TRead::readProperty(item, tag, e, ctx, Pid::AUTOPLACE)) {
@@ -2971,8 +2977,7 @@ bool TRead::readProperties(LineSegment* l, XmlReader& e, ReadContext& ctx)
             }
       */
     else if (!readItemProperties(l, e, ctx)) {
-        e.unknown();
-        return false;
+        return false;   // caller's e.unknown() skips once; skipping here too would double-skip and overrun the cursor
     }
     return true;
 }
