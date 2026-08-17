@@ -30,12 +30,27 @@
 
 #include "rwregister.h"
 #include "inoutdata.h"
+#include "write/writer.h"
 
 #include "log.h"
 
 using namespace mu::io;
 using namespace mu::engraving;
 using namespace mu::engraving::rw;
+
+void MscSaver::normalizeForSerialization(MasterScore* score)
+{
+    TRACEFUNC;
+
+    write::Writer::normalizeScoreForSerialization(score);
+
+    for (const Excerpt* excerpt : score->excerpts()) {
+        Score* partScore = excerpt->excerptScore();
+        if (partScore && partScore != score) {
+            write::Writer::normalizeScoreForSerialization(partScore);
+        }
+    }
+}
 
 bool MscSaver::writeMscz(MasterScore* score, MscWriter& mscWriter, bool onlySelection, bool doCreateThumbnail)
 {
@@ -91,7 +106,8 @@ bool MscSaver::writeMscz(MasterScore* score, MscWriter& mscWriter, bool onlySele
                         Buffer excerptBuf(&excerptData);
                         excerptBuf.open(IODevice::ReadWrite);
 
-                        RWRegister::writer()->writeScore(excerpt->excerptScore(), &excerptBuf, onlySelection, &masterWriteOutData);
+                        RWRegister::writer()->writeScore(excerpt->excerptScore(), &excerptBuf,
+                                                         onlySelection, &masterWriteOutData);
 
                         mscWriter.addExcerptFile(excerpt->name(), excerptData);
                     }

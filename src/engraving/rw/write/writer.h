@@ -34,6 +34,10 @@ public:
 
     bool writeScore(Score* score, io::IODevice* device, bool onlySelection, rw::WriteInOutData* out) override;
 
+    // Applies the in-memory normalization that a complete score write needs,
+    // without creating an XML document.
+    static void normalizeScoreForSerialization(Score* score);
+
     static void write(Score* score, XmlWriter& xml, WriteContext& ctx, bool selectionOnly, compat::WriteScoreHook& hook);
 
     void writeSegments(XmlWriter& xml, SelectionFilter* filter, track_idx_t st, track_idx_t et, Segment* sseg, Segment* eseg, bool, bool,

@@ -38,6 +38,64 @@
 using namespace mu::engraving;
 using namespace mu::engraving::write;
 
+namespace {
+struct ScoreWritePreparation {
+    std::list<Part*> hiddenParts;
+};
+
+std::list<Part*> hiddenPartsForSerialization(Score* score)
+{
+    std::list<Part*> hiddenParts;
+    if (!score->style().styleB(Sid::createMultiMeasureRests)) {
+        return hiddenParts;
+    }
+
+    for (Part* part : score->parts()) {
+        if (!part->show()) {
+            hiddenParts.push_back(part);
+        }
+    }
+    return hiddenParts;
+}
+
+ScoreWritePreparation prepareScoreForWriting(Score* score)
+{
+    ScoreWritePreparation preparation;
+
+    // If multi-measure rests are enabled, hidden parts can leave layout
+    // information incomplete. Temporarily reveal them and relayout before
+    // serializing the score.
+    preparation.hiddenParts = hiddenPartsForSerialization(score);
+    if (!preparation.hiddenParts.empty()) {
+        score->startCmd();
+        for (Part* part : preparation.hiddenParts) {
+            part->undoChangeProperty(Pid::VISIBLE, true);
+        }
+        score->doLayout();
+        for (Part* part : preparation.hiddenParts) {
+            part->setShow(false);
+        }
+    }
+
+    return preparation;
+}
+
+void finishScoreWriting(Score* score, const ScoreWritePreparation& preparation)
+{
+    if (!preparation.hiddenParts.empty()) {
+        score->endCmd(true);
+    }
+}
+
+void updateScoreVersionForSerialization(Score* score)
+{
+    // Update version values for plugin access after a complete write.
+    score->setMscoreVersion(mu::String::fromAscii(MUSESCORE_VERSION));
+    score->setMscoreRevision(mu::AsciiStringView(MUSESCORE_REVISION).toInt(nullptr, 16));
+    score->setMscVersion(Constants::MSC_VERSION);
+}
+}
+
 bool Writer::writeScore(Score* score, io::IODevice* device, bool onlySelection, rw::WriteInOutData* inout)
 {
     TRACEFUNC;
@@ -63,10 +121,7 @@ bool Writer::writeScore(Score* score, io::IODevice* device, bool onlySelection, 
     xml.endElement();
 
     if (!onlySelection) {
-        //update version values for i.e. plugin access
-        score->m_mscoreVersion = String::fromAscii(MUSESCORE_VERSION);
-        score->m_mscoreRevision = AsciiStringView(MUSESCORE_REVISION).toInt(nullptr, 16);
-        score->m_mscVersion = Constants::MSC_VERSION;
+        updateScoreVersionForSerialization(score);
     }
 
     if (inout) {
@@ -76,34 +131,22 @@ bool Writer::writeScore(Score* score, io::IODevice* device, bool onlySelection, 
     return true;
 }
 
+void Writer::normalizeScoreForSerialization(Score* score)
+{
+    // Keep the complete Writer transaction. In particular, its rollback
+    // update performs more than layout: it disposes postponed objects and
+    // updates score-wide state that becomes visible in the serialized model.
+    // This omits only XML generation and all archive I/O.
+    const ScoreWritePreparation preparation = prepareScoreForWriting(score);
+    finishScoreWriting(score, preparation);
+    updateScoreVersionForSerialization(score);
+}
+
 void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, bool selectionOnly, compat::WriteScoreHook& hook)
 {
     TRACEFUNC;
 
-    // if we have multi measure rests and some parts are hidden,
-    // then some layout information is missing:
-    // relayout with all parts set visible
-
-    std::list<Part*> hiddenParts;
-    bool unhide = false;
-    if (score->style().styleB(Sid::createMultiMeasureRests)) {
-        for (Part* part : score->m_parts) {
-            if (!part->show()) {
-                if (!unhide) {
-                    score->startCmd();
-                    unhide = true;
-                }
-                part->undoChangeProperty(Pid::VISIBLE, true);
-                hiddenParts.push_back(part);
-            }
-        }
-    }
-    if (unhide) {
-        score->doLayout();
-        for (Part* p : hiddenParts) {
-            p->setShow(false);
-        }
-    }
+    const ScoreWritePreparation preparation = prepareScoreForWriting(score);
 
     xml.startElement(score);
 
@@ -248,9 +291,7 @@ void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, bool selecti
 
     xml.endElement();
 
-    if (unhide) {
-        score->endCmd(true);
-    }
+    finishScoreWriting(score, preparation);
 }
 
 void Writer::writeSegments(XmlWriter& xml, SelectionFilter* filter, track_idx_t strack, track_idx_t etrack,

@@ -69,6 +69,7 @@ public:
     Ret setupMasterScore(bool forceMode);
 
     Ret loadMscz(const MscReader& msc, SettingsCompat& settingsCompat, bool ignoreVersionError);
+    void normalizeForSerialization();
     bool writeMscz(MscWriter& writer, bool onlySelection, bool createThumbnail);
 
     bool isCorruptedUponLoading() const;

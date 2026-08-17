@@ -36,6 +36,7 @@ class MscSaver
 public:
     MscSaver() = default;
 
+    void normalizeForSerialization(MasterScore* score);
     bool writeMscz(MasterScore* score, MscWriter& mscWriter, bool onlySelection, bool doCreateThumbnail);
 
     bool exportPart(Score* partScore, MscWriter& mscWriter);

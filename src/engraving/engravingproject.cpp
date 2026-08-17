@@ -149,6 +149,14 @@ Ret EngravingProject::loadMscz(const MscReader& msc, SettingsCompat& settingsCom
     return loader.loadMscz(m_masterScore, msc, settingsCompat, ignoreVersionError);
 }
 
+void EngravingProject::normalizeForSerialization()
+{
+    TRACEFUNC;
+
+    MscSaver saver;
+    saver.normalizeForSerialization(m_masterScore);
+}
+
 bool EngravingProject::writeMscz(MscWriter& writer, bool onlySelection, bool createThumbnail)
 {
     TRACEFUNC;
