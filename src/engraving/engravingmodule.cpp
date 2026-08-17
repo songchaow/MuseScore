@@ -122,14 +122,22 @@ void EngravingModule::onInit(const framework::IApplication::RunMode& mode)
         // Symbols
         Smufl::init();
 
-        m_engravingfonts->addFont("Leland",     "Leland",      "fonts/leland/Leland.otf");
-        m_engravingfonts->addFont("Bravura",    "Bravura",     "fonts/bravura/Bravura.otf");
-        m_engravingfonts->addFont("Emmentaler", "MScore",      "fonts/mscore/mscore.ttf");
-        m_engravingfonts->addFont("Gonville",   "Gootville",   "fonts/gootville/Gootville.otf");
-        m_engravingfonts->addFont("MuseJazz",   "MuseJazz",    "fonts/musejazz/MuseJazz.otf");
-        m_engravingfonts->addFont("Petaluma",   "Petaluma",    "fonts/petaluma/Petaluma.otf");
-        m_engravingfonts->addFont("Finale Maestro", "Finale Maestro", "fonts/finalemaestro/FinaleMaestro.otf");
-        m_engravingfonts->addFont("Finale Broadway", "Finale Broadway", "fonts/finalebroadway/FinaleBroadway.otf");
+        m_engravingfonts->addFont("Leland", "Leland", "fonts/leland/Leland.otf",
+                                  "fonts/leland/leland_metadata.json");
+        m_engravingfonts->addFont("Bravura", "Bravura", "fonts/bravura/Bravura.otf",
+                                  "fonts/bravura/bravura_metadata.json");
+        m_engravingfonts->addFont("Emmentaler", "MScore", "fonts/mscore/mscore.ttf",
+                                  "fonts/mscore/metadata.json");
+        m_engravingfonts->addFont("Gonville", "Gootville", "fonts/gootville/Gootville.otf",
+                                  "fonts/gootville/metadata.json");
+        m_engravingfonts->addFont("MuseJazz", "MuseJazz", "fonts/musejazz/MuseJazz.otf",
+                                  "fonts/musejazz/metadata.json");
+        m_engravingfonts->addFont("Petaluma", "Petaluma", "fonts/petaluma/Petaluma.otf",
+                                  "fonts/petaluma/petaluma_metadata.json");
+        m_engravingfonts->addFont("Finale Maestro", "Finale Maestro", "fonts/finalemaestro/FinaleMaestro.otf",
+                                  "fonts/finalemaestro/FinaleMaestro.json");
+        m_engravingfonts->addFont("Finale Broadway", "Finale Broadway", "fonts/finalebroadway/FinaleBroadway.otf",
+                                  "fonts/finalebroadway/FinaleBroadway.json");
 
         m_engravingfonts->setFallbackFont("Bravura");
 

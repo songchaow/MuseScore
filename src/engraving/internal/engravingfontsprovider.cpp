@@ -29,9 +29,10 @@
 using namespace mu;
 using namespace mu::engraving;
 
-void EngravingFontsProvider::addFont(const std::string& name, const std::string& family, const io::path_t& filePath)
+void EngravingFontsProvider::addFont(const std::string& name, const std::string& family,
+                                     const io::path_t& fontPath, const io::path_t& metadataPath)
 {
-    std::shared_ptr<EngravingFont> f = std::make_shared<EngravingFont>(name, family, filePath);
+    std::shared_ptr<EngravingFont> f = std::make_shared<EngravingFont>(name, family, fontPath, metadataPath);
     m_symbolFonts.push_back(f);
     m_fallback.font = nullptr;
 }
@@ -106,6 +107,13 @@ bool EngravingFontsProvider::isFallbackFont(const IEngravingFont* f) const
 
 void EngravingFontsProvider::loadAllFonts()
 {
+    // Some symbol-font metadata resolves composed glyphs through the fallback
+    // font. Load that dependency first so initialization never observes a
+    // temporarily unavailable fallback.
+    if (std::shared_ptr<EngravingFont> fallback = doFallbackFont()) {
+        fallback->ensureLoad();
+    }
+
     for (std::shared_ptr<EngravingFont>& f : m_symbolFonts) {
         f->ensureLoad();
     }

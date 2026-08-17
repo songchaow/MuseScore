@@ -35,7 +35,8 @@ class EngravingFontsProvider : public IEngravingFontsProvider
 {
 public:
 
-    void addFont(const std::string& name, const std::string& family, const io::path_t& filePath) override;
+    void addFont(const std::string& name, const std::string& family,
+                 const io::path_t& fontPath, const io::path_t& metadataPath) override;
     IEngravingFontPtr fontByName(const std::string& name) const override;
     std::vector<IEngravingFontPtr> fonts() const override;
 

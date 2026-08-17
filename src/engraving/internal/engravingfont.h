@@ -53,7 +53,8 @@ class EngravingFont : public IEngravingFont
     INJECT_STATIC(mu::draw::IFontProvider, fontProvider)
     INJECT_STATIC(IEngravingFontsProvider, engravingFonts)
 public:
-    EngravingFont(const std::string& name, const std::string& family, const io::path_t& filePath);
+    EngravingFont(const std::string& name, const std::string& family,
+                  const io::path_t& fontPath, const io::path_t& metadataPath);
     EngravingFont(const EngravingFont& other);
 
     const std::string& name() const override;
@@ -135,6 +136,7 @@ private:
     std::string m_name;
     std::string m_family;
     io::path_t m_fontPath;
+    io::path_t m_metadataPath;
 
     std::unordered_map<Sid, PropertyValue> m_engravingDefaults;
     double m_textEnclosureThickness = 0;

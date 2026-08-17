@@ -26,7 +26,6 @@
 
 #include "serialization/json.h"
 #include "io/file.h"
-#include "io/fileinfo.h"
 #include "draw/painter.h"
 #include "types/symnames.h"
 
@@ -158,11 +157,13 @@ bool shouldLogNoteheadMetricsDiagnostic(SymId symId)
 // ScoreFont
 // =============================================
 
-EngravingFont::EngravingFont(const std::string& name, const std::string& family, const path_t& filePath)
+EngravingFont::EngravingFont(const std::string& name, const std::string& family,
+                             const path_t& fontPath, const path_t& metadataPath)
     : m_symbols(static_cast<size_t>(SymId::lastSym) + 1),
     m_name(name),
     m_family(family),
-    m_fontPath(filePath)
+    m_fontPath(fontPath),
+    m_metadataPath(metadataPath)
 {
 }
 
@@ -173,6 +174,7 @@ EngravingFont::EngravingFont(const EngravingFont& other)
     m_name     = other.m_name;
     m_family   = other.m_family;
     m_fontPath = other.m_fontPath;
+    m_metadataPath = other.m_metadataPath;
 }
 
 // =============================================
@@ -241,7 +243,7 @@ void EngravingFont::ensureLoad()
         }
     }
 
-    io::path_t metadataPath = io::FileInfo(m_fontPath).path() + u"/metadata.json";
+    io::path_t metadataPath = m_metadataPath;
     std::unique_ptr<File> metadataFile = openReadOnlyResourceFileWithFallback(metadataPath, &metadataPath);
     if (!metadataFile) {
         LOGE() << "Failed to open glyph metadata file: " << metadataPath;
