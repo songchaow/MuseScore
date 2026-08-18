@@ -71,13 +71,23 @@ ScoreWritePreparation prepareScoreForWriting(Score* score)
         for (Part* part : preparation.hiddenParts) {
             part->undoChangeProperty(Pid::VISIBLE, true);
         }
-        score->doLayout();
-        for (Part* part : preparation.hiddenParts) {
-            part->setShow(false);
-        }
     }
 
     return preparation;
+}
+
+void layoutScoreForWriting(Score* score, const ScoreWritePreparation& preparation)
+{
+    if (!preparation.hiddenParts.empty()) {
+        score->doLayout();
+    }
+}
+
+void restoreHiddenPartsAfterWriting(const ScoreWritePreparation& preparation)
+{
+    for (Part* part : preparation.hiddenParts) {
+        part->setShow(false);
+    }
 }
 
 void finishScoreWriting(Score* score, const ScoreWritePreparation& preparation)
@@ -136,8 +146,10 @@ void Writer::normalizeScoreForSerialization(Score* score)
     // Keep the complete Writer transaction. In particular, its rollback
     // update performs more than layout: it disposes postponed objects and
     // updates score-wide state that becomes visible in the serialized model.
-    // This omits only XML generation and all archive I/O.
+    // The intermediate full layout exists solely to supply XML with the
+    // temporarily revealed parts, so an in-memory-only normalization omits it.
     const ScoreWritePreparation preparation = prepareScoreForWriting(score);
+    restoreHiddenPartsAfterWriting(preparation);
     finishScoreWriting(score, preparation);
     updateScoreVersionForSerialization(score);
 }
@@ -147,6 +159,8 @@ void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, bool selecti
     TRACEFUNC;
 
     const ScoreWritePreparation preparation = prepareScoreForWriting(score);
+    layoutScoreForWriting(score, preparation);
+    restoreHiddenPartsAfterWriting(preparation);
 
     xml.startElement(score);
 
