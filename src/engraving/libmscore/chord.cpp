@@ -2451,6 +2451,13 @@ void Chord::sortNotes()
     std::sort(notes().begin(), notes().end(), noteIsBefore);
 }
 
+std::vector<Note*> Chord::notesSorted(const std::vector<Note*>& notes)
+{
+    std::vector<Note*> sorted(notes);
+    std::sort(sorted.begin(), sorted.end(), noteIsBefore);
+    return sorted;
+}
+
 //---------------------------------------------------------
 //   nextTiedChord
 //    Return next chord if all notes in this chord are tied to it.

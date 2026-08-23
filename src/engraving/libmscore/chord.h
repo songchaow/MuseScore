@@ -249,6 +249,12 @@ public:
     Measure* measure() const override;
 
     void sortNotes();
+    // Pure-function variant of sortNotes (no state change): the note order the
+    // canonical fingerprint serializes in digest mode. The serializer cannot
+    // mutate the chord, and the layout (cmdUpdateNotes) sorts notes only when
+    // it runs, so digest mode must normalize the order itself — note order is
+    // content-determined (line/pitch/tie rules), see Chord::sortNotes.
+    static std::vector<Note*> notesSorted(const std::vector<Note*>& notes);
 
     Chord* nextTiedChord(bool backwards = false, bool sameSize = true);
     bool containsTieEnd() const;

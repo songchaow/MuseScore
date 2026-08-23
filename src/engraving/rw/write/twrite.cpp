@@ -380,15 +380,20 @@ void TWrite::write(const Ambitus* item, XmlWriter& xml, WriteContext& ctx)
     xml.tag("topTpc",     item->topTpc());
     xml.tag("bottomPitch", item->bottomPitch());
     xml.tag("bottomTpc",  item->bottomTpc());
-    if (item->topAccidental()->accidentalType() != AccidentalType::NONE) {
-        xml.startElement("topAccidental");
-        write(item->topAccidental(), xml, ctx);
-        xml.endElement();
-    }
-    if (item->bottomAccidental()->accidentalType() != AccidentalType::NONE) {
-        xml.startElement("bottomAccidental");
-        write(item->bottomAccidental(), xml, ctx);
-        xml.endElement();
+    // Digest mode: the range accidentals are layout-derived from the pitch/tpc
+    // content, so the canonical fingerprint omits them (topPitch/topTpc carry
+    // the content).
+    if (!ctx.digestMode()) {
+        if (item->topAccidental()->accidentalType() != AccidentalType::NONE) {
+            xml.startElement("topAccidental");
+            write(item->topAccidental(), xml, ctx);
+            xml.endElement();
+        }
+        if (item->bottomAccidental()->accidentalType() != AccidentalType::NONE) {
+            xml.startElement("bottomAccidental");
+            write(item->bottomAccidental(), xml, ctx);
+            xml.endElement();
+        }
     }
     writeItemProperties(item, xml, ctx);
     xml.endElement();
@@ -458,14 +463,23 @@ void TWrite::write(const Ornament* item, XmlWriter& xml, WriteContext& ctx)
     }
     xml.startElement(item);
 
-    if (item->cueNoteChord()) {
-        write(item->cueNoteChord(), xml, ctx);
-    } else {
-        if (item->accidentalAbove()) {
-            write(item->accidentalAbove(), xml, ctx);
-        }
-        if (item->accidentalBelow()) {
-            write(item->accidentalBelow(), xml, ctx);
+    // Digest mode: the cue note chord and the above/below accidentals are
+    // layout-derived (Ornament::updateCueNote / updateAccidentalsAboveAndBelow
+    // create them from the interval content), so the canonical fingerprint
+    // omits them — the INTERVAL_* / ORNAMENT_SHOW_ACCIDENTAL properties below
+    // carry the content. USER-role accidentals stay.
+    if (!ctx.digestMode()) {
+        if (item->cueNoteChord()) {
+            write(item->cueNoteChord(), xml, ctx);
+        } else {
+            if (item->accidentalAbove()
+                && item->accidentalAbove()->role() != AccidentalRole::AUTO) {
+                write(item->accidentalAbove(), xml, ctx);
+            }
+            if (item->accidentalBelow()
+                && item->accidentalBelow()->role() != AccidentalRole::AUTO) {
+                write(item->accidentalBelow(), xml, ctx);
+            }
         }
     }
 
@@ -710,17 +724,32 @@ void TWrite::write(const Chord* item, XmlWriter& xml, WriteContext& ctx)
 
     if (item->noStem()) {
         xml.tag("noStem", item->noStem());
-    } else if (item->stem() && (item->stem()->isUserModified() || (item->stem()->userLength() != 0.0))) {
+    }
+    // Digest mode: Stem/Hook/StemSlash are layout-derived — the layout
+    // creates them and sets their geometry (EngravingItem::isUserModified
+    // reports "property != default", which the layout's setLength triggers),
+    // so their presence/attributes depend on whether a layout ran. The
+    // content-level noStem flag is serialized above; the note structure
+    // (durations) fully determines the rest.
+    else if (!ctx.digestMode()
+             && item->stem() && (item->stem()->isUserModified() || (item->stem()->userLength() != 0.0))) {
         write(item->stem(), xml, ctx);
     }
-    if (item->hook() && item->hook()->isUserModified()) {
-        write(item->hook(), xml, ctx);
-    }
-    if (item->stemSlash() && item->stemSlash()->isUserModified()) {
-        write(item->stemSlash(), xml, ctx);
+    if (!ctx.digestMode()) {
+        if (item->hook() && item->hook()->isUserModified()) {
+            write(item->hook(), xml, ctx);
+        }
+        if (item->stemSlash() && item->stemSlash()->isUserModified()) {
+            write(item->stemSlash(), xml, ctx);
+        }
     }
     writeProperty(item, xml, Pid::STEM_DIRECTION);
-    for (Note* n : item->notes()) {
+    // Digest mode: the note ORDER is normalized to the layout's sortNotes
+    // order (a pure content function of line/pitch/tie) — the layout sorts
+    // notes only when it runs, so without the normalization the digest would
+    // depend on whether cmdUpdateNotes executed.
+    std::vector<Note*> notes = ctx.digestMode() ? Chord::notesSorted(item->notes()) : item->notes();
+    for (Note* n : notes) {
         write(n, xml, ctx);
     }
     if (item->arpeggio()) {
@@ -740,6 +769,14 @@ void TWrite::write(const Chord* item, XmlWriter& xml, WriteContext& ctx)
 
 void TWrite::writeChordRestBeam(const ChordRest* item, XmlWriter& xml, WriteContext& ctx)
 {
+    // Digest mode: beams are layout-derived (created by BeamLayout::createBeams
+    // from the note structure; not marked generated), so the canonical
+    // fingerprint omits them — beam presence/grouping is a pure function of
+    // the chord content. The content-level beamMode is still serialized by
+    // ChordRest::writeProperties.
+    if (ctx.digestMode()) {
+        return;
+    }
     Beam* b = item->beam();
     if (b && b->elements().front() == item && (MScore::testMode || !b->generated())) {
         write(b, xml, ctx);
@@ -762,7 +799,14 @@ void TWrite::writeProperties(const ChordRest* item, XmlWriter& xml, WriteContext
     if (item->actualDurationType().dots()) {
         xml.tag("dots", item->actualDurationType().dots());
     }
-    writeProperty(item, xml, Pid::STAFF_MOVE);
+    // Digest mode: STAFF_MOVE is layout-derived — the layout recomputes the
+    // automatic cross-staff move from the note content (pitch vs staff range);
+    // only a layout run would materialize it. The content (which staff a note
+    // belongs to, the notes themselves) is fully serialized, so omitting the
+    // derived move keeps the digest layout-independent.
+    if (!ctx.digestMode()) {
+        writeProperty(item, xml, Pid::STAFF_MOVE);
+    }
 
     if (item->actualDurationType().isValid()) {
         xml.tag("durationType", TConv::toXml(item->actualDurationType().type()));
@@ -1965,8 +2009,14 @@ void TWrite::write(const Note* item, XmlWriter& xml, WriteContext& ctx)
     xml.startElement(item);
     writeItemProperties(item, xml, ctx);
 
-    if (item->accidental()) {
-        write(item->accidental(), xml, ctx);
+    // Digest mode: automatic accidentals are layout-derived (created by
+    // Note::updateAccidental from tpc+key), so the canonical fingerprint
+    // omits them — they are a pure function of the note content. USER-role
+    // accidentals (explicitly placed by the user) ARE content and stay.
+    if (!(ctx.digestMode() && item->accidental() && item->accidental()->role() == AccidentalRole::AUTO)) {
+        if (item->accidental()) {
+            write(item->accidental(), xml, ctx);
+        }
     }
     writeItems(item->el(), xml, ctx);
     bool write_dots = false;
@@ -1997,8 +2047,15 @@ void TWrite::write(const Note* item, XmlWriter& xml, WriteContext& ctx)
         xml.endElement();
     }
     for (Pid id : { Pid::PITCH, Pid::TPC1, Pid::TPC2, Pid::SMALL, Pid::MIRROR_HEAD, Pid::DOT_POSITION,
-                    Pid::HEAD_SCHEME, Pid::HEAD_GROUP, Pid::USER_VELOCITY, Pid::PLAY, Pid::TUNING, Pid::FRET, Pid::STRING,
+                    Pid::HEAD_SCHEME, Pid::HEAD_GROUP, Pid::USER_VELOCITY, Pid::PLAY, Pid::TUNING,
                     Pid::GHOST, Pid::DEAD, Pid::HEAD_TYPE, Pid::FIXED, Pid::FIXED_LINE }) {
+        // Digest mode: FRET/STRING are layout-derived on tablature staves
+        // (Chord::cmdUpdateNotes re-frets chords from the pitch during the
+        // layout); the pitch/tpc/tuning content fully determines them, so the
+        // canonical fingerprint omits them.
+        if (ctx.digestMode() && (id == Pid::FRET || id == Pid::STRING)) {
+            continue;
+        }
         writeProperty(item, xml, id);
     }
 

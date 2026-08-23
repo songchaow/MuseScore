@@ -54,12 +54,20 @@ public:
     bool isMsczMode() const { return _msczMode; }
     bool writeTrack() const { return _writeTrack; }
     bool writePosition() const { return _writePosition; }
-
     void setClipboardmode(bool v) { _clipboardmode = v; }
     void setExcerptmode(bool v) { _excerptmode = v; }
     void setIsMsczMode(bool v) { _msczMode = v; }
-    void setWriteTrack(bool v) { _writeTrack= v; }
+    void setWriteTrack(bool v) { _writeTrack = v; }
     void setWritePosition(bool v) { _writePosition = v; }
+    // Digest mode: the serialization used by the canonical state fingerprint
+    // (MscoreProjectCore::element_digest). It omits layout-derived products
+    // (automatic accidentals, beams, ornament cue/accidental products, ambitus
+    // accidentals) so the digest is a pure function of the score CONTENT and
+    // independent of whether a layout ran — the "no render/layout state"
+    // promise of the canonical spec, enforced at the serializer level instead
+    // of being implicitly broken by Note::write / Chord::write / Ornament::write.
+    bool digestMode() const { return _digestMode; }
+    void setDigestMode(bool v) { _digestMode = v; }
 
     void setFilter(SelectionFilter f) { _filter = f; }
     bool canWrite(const EngravingItem*) const;
@@ -76,6 +84,7 @@ public:
                && _msczMode == c._msczMode
                && _writeTrack == c._writeTrack
                && _writePosition == c._writePosition
+               && _digestMode == c._digestMode
                && _filter == c._filter
                && m_linksIndexer == c.m_linksIndexer
                && m_lidLocalIndices == c.m_lidLocalIndices;
@@ -95,6 +104,7 @@ private:
     bool _msczMode       { true };      // false if writing into *.msc file
     bool _writeTrack     { false };
     bool _writePosition  { false };
+    bool _digestMode     { false };     // canonical-fingerprint serialization (omits layout products)
 
     SelectionFilter _filter;
 
