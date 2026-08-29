@@ -40,6 +40,47 @@
 #include "../../../../../drawdebug_logger.h"
 #endif
 
+// Repaint cost breakdown counters (portable build). These are plain integer
+// increments, so they stay compiled in — the canvas surfaces them through
+// GScoreCanvas::get_draw_stats() so a test can attribute repaint time to the
+// page loop, the BSP query and the per-element draw loop separately.
+namespace {
+// Monotonic microsecond clock for the portable repaint counters.
+int64_t portable_ticks_usec()
+{
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+                   std::chrono::steady_clock::now().time_since_epoch())
+            .count();
+}
+
+struct PaintBreakdown {
+    int pages_total = 0;
+    int pages_culled = 0;
+    int bsp_query_usec = 0;
+    int draw_loop_usec = 0;
+    int sort_usec = 0;
+    int elements_drawn = 0;
+    void reset() { *this = PaintBreakdown(); }
+};
+PaintBreakdown g_paint_breakdown;
+}
+
+namespace mu::engraving::rendering::dev {
+const void* paint_breakdown_stats(int& pages_total, int& pages_culled,
+                                  int& bsp_usec, int& draw_usec, int& sort_usec,
+                                  int& elements_drawn)
+{
+    pages_total = g_paint_breakdown.pages_total;
+    pages_culled = g_paint_breakdown.pages_culled;
+    bsp_usec = g_paint_breakdown.bsp_query_usec;
+    draw_usec = g_paint_breakdown.draw_loop_usec;
+    sort_usec = g_paint_breakdown.sort_usec;
+    elements_drawn = g_paint_breakdown.elements_drawn;
+    return &g_paint_breakdown;
+}
+void reset_paint_breakdown() { g_paint_breakdown.reset(); }
+}
+
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::dev;
 
@@ -353,6 +394,7 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
     for (int copy = 0; copy < opt.copyCount; ++copy) {
         bool firstPage = true;
         for (int pi = fromPage; pi <= toPage; ++pi) {
+            ++g_paint_breakdown.pages_total;
             Page* page = pages.at(pi);
 
             PointF pagePos = page->pos();
@@ -373,35 +415,22 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
             const int pageElementCount = static_cast<int>(pageElements.size());
 #endif
             if (opt.frameRect.isValid()) {
-                if (pageAbsRect.right() < opt.frameRect.left()) {
-#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
-                    DrawDebugLogger::instance().logPageQuery(pi,
-                                                             pageAbsRect,
-                                                             opt.frameRect,
-                                                             RectF(),
-                                                             RectF(),
-                                                             pageElementCount,
-                                                             0,
-                                                             false,
-                                                             false,
-                                                             "page_before_frame_rect_left_edge");
-#endif
+                // Pages are laid out along the Y axis in vertical orientation
+                // (dev/pagelayout.cpp) and along X otherwise. The upstream
+                // culling only ever compared X, so in vertical mode every
+                // page survived and the loop ran a fillRect + clip + BSP
+                // query per page for pages that are entirely off-screen.
+                // Compare BOTH axes so the loop can `continue` past pages
+                // above the viewport and `break` at the first page below it.
+                if (pageAbsRect.right() < opt.frameRect.left()
+                    || pageAbsRect.bottom() < opt.frameRect.top()) {
+                    ++g_paint_breakdown.pages_culled;
                     continue;
                 }
 
-                if (pageAbsRect.left() > opt.frameRect.right()) {
-#if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
-                    DrawDebugLogger::instance().logPageQuery(pi,
-                                                             pageAbsRect,
-                                                             opt.frameRect,
-                                                             RectF(),
-                                                             RectF(),
-                                                             pageElementCount,
-                                                             0,
-                                                             false,
-                                                             false,
-                                                             "page_after_frame_rect_right_edge");
-#endif
+                if (pageAbsRect.left() > opt.frameRect.right()
+                    || pageAbsRect.top() > opt.frameRect.bottom()) {
+                    ++g_paint_breakdown.pages_culled;
                     break;
                 }
 
@@ -444,7 +473,9 @@ void Paint::paintScore(draw::Painter* painter, Score* score, const IScoreRendere
             }
 
             const RectF frameLocalRect = drawRect.translated(-pagePos);
+            const int64_t t_bsp0 = portable_ticks_usec();
             std::vector<EngravingItem*> elements = page->items(frameLocalRect);
+            g_paint_breakdown.bsp_query_usec += static_cast<int>(portable_ticks_usec() - t_bsp0);
 
 #if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
             PageQueryTypeStats monitoredTypeStats;
@@ -579,10 +610,12 @@ void Paint::paintItem(mu::draw::Painter& painter, const EngravingItem* item, int
 void Paint::paintItems(mu::draw::Painter& painter, const std::vector<EngravingItem*>& items, bool isPrinting, int pageIndex)
 {
     TRACEFUNC;
+    const int64_t t_sort0 = portable_ticks_usec();
     std::vector<EngravingItem*> sortedItems(items.begin(), items.end());
-
     std::sort(sortedItems.begin(), sortedItems.end(), mu::engraving::elementLessThan);
+    g_paint_breakdown.sort_usec += static_cast<int>(portable_ticks_usec() - t_sort0);
 
+    const int64_t t_loop0 = portable_ticks_usec();
     int sortedIndex = 0;
     for (const EngravingItem* item : sortedItems) {
 #if MUSESCORE_PORTABLE_ENABLE_DRAW_DEBUG
@@ -611,6 +644,8 @@ void Paint::paintItems(mu::draw::Painter& painter, const std::vector<EngravingIt
         paintItem(painter, item, pageIndex, sortedIndex);
         sortedIndex += 1;
     }
+    g_paint_breakdown.draw_loop_usec += static_cast<int>(portable_ticks_usec() - t_loop0);
+    g_paint_breakdown.elements_drawn += sortedIndex;
 
 #ifdef MUE_ENABLE_ENGRAVING_PAINT_DEBUGGER
     if (!isPrinting) {

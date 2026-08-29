@@ -47,6 +47,13 @@ public:
 
 private:
 };
+
+// Repaint cost breakdown (portable instrumentation). Lets the Godot canvas
+// attribute repaint time to the page loop, BSP query, sort and draw loop.
+const void* paint_breakdown_stats(int& pages_total, int& pages_culled,
+                                  int& bsp_usec, int& draw_usec, int& sort_usec,
+                                  int& elements_drawn);
+void reset_paint_breakdown();
 }
 
 #endif // MU_ENGRAVING_PAINT_H
