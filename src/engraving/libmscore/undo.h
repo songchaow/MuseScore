@@ -222,6 +222,14 @@ public:
     bool canUndo() const { return curIdx > 0; }
     bool canRedo() const { return curIdx < list.size(); }
     bool isClean() const { return cleanState == stateList[curIdx]; }
+    // Content identity of the CURRENT stack position: a monotonic value that
+    // changes on every new macro and survives redo-stack truncation (a fresh
+    // edit after an undo pushes a NEW value, so a stale saved value can never
+    // match again), while undo/redo to an earlier position restores that
+    // position's value verbatim.  This lets a document layer record "the
+    // content state I saved" and later tell apart "undid back to the saved
+    // content" (clean) from "edited after undoing" (dirty) in O(1).
+    int content_state() const { return stateList[curIdx]; }
     size_t getCurIdx() const { return curIdx; }
     UndoMacro* current() const { return curCmd; }
     UndoMacro* last() const { return curIdx > 0 ? list[curIdx - 1] : 0; }
